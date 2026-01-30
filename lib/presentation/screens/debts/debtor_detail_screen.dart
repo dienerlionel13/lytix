@@ -379,8 +379,16 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
     }
   }
 
-  void _showReceivableDetail(Receivable receivable) {
-    // Todo: Show receivable detail
+  void _showReceivableDetail(Receivable receivable) async {
+    final result = await Navigator.pushNamed(
+      context,
+      '/debtor/receivable/detail',
+      arguments: {'debtor': widget.debtor, 'receivable': receivable},
+    );
+
+    if (result == true) {
+      _loadReceivables();
+    }
   }
 
   void _addPayment(Receivable receivable) {

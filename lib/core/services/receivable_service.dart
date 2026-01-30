@@ -104,6 +104,41 @@ class ReceivableService extends ChangeNotifier {
     }
   }
 
+  /// Obtiene los pagos de una deuda específica
+  Future<List<ReceivablePayment>> getPayments(String receivableId) async {
+    try {
+      final List<dynamic> response = await _supabase
+          .schema('lytix')
+          .from('receivable_payments')
+          .select()
+          .eq('receivable_id', receivableId)
+          .order('payment_date', ascending: false);
+
+      final payments = response
+          .map((m) => ReceivablePayment.fromMap(m))
+          .toList();
+
+      for (var payment in payments) {
+        await _dbHelper.debtsDb.insert(
+          'receivable_payments',
+          payment.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      return payments;
+    } catch (e) {
+      debugPrint('Error obteniendo pagos, usando local: $e');
+      final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
+        'receivable_payments',
+        where: 'receivable_id = ?',
+        whereArgs: [receivableId],
+        orderBy: 'payment_date DESC',
+      );
+      return maps.map((m) => ReceivablePayment.fromMap(m)).toList();
+    }
+  }
+
   /// Registra un pago para una deuda
   Future<void> savePayment(ReceivablePayment payment) async {
     try {
@@ -199,6 +234,22 @@ class ReceivableService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Error al eliminar categoría: $e');
+      rethrow;
+    }
+  }
+
+  /// Elimina una deuda (receivable)
+  Future<void> deleteReceivable(String id) async {
+    try {
+      await _supabase.schema('lytix').from('receivables').delete().eq('id', id);
+      await _dbHelper.debtsDb.delete(
+        DbConstants.tableReceivables,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al eliminar deuda: $e');
       rethrow;
     }
   }

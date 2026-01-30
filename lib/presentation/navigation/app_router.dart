@@ -9,6 +9,7 @@ import '../screens/debts/add_debtor_screen.dart';
 import '../screens/debts/debtor_detail_screen.dart';
 import '../screens/debts/add_receivable_screen.dart';
 import '../screens/debts/receivable_categories_screen.dart';
+import '../screens/debts/receivable_detail_screen.dart';
 import '../screens/debts/creditors_list_screen.dart';
 import '../screens/debts/add_creditor_screen.dart';
 import '../screens/cards/cards_list_screen.dart';
@@ -45,6 +46,7 @@ class AppRouter {
   static const String addDebtor = '/debtor/add';
   static const String debtorDetail = '/debtor/detail';
   static const String addReceivable = '/debtor/receivable/add';
+  static const String receivableDetail = '/debtor/receivable/detail';
   static const String receivableCategories = '/debtor/categories';
   static const String creditors = '/creditors';
   static const String addCreditor = '/creditor/add';
@@ -110,6 +112,16 @@ class AppRouter {
           AddReceivableScreen(
             debtor: args['debtor'] as Debtor,
             receivable: args['receivable'] as Receivable?,
+          ),
+          settings,
+        );
+
+      case receivableDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _buildPageRoute(
+          ReceivableDetailScreen(
+            debtor: args['debtor'] as Debtor,
+            receivable: args['receivable'] as Receivable,
           ),
           settings,
         );
