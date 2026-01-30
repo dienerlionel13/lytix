@@ -130,6 +130,7 @@ class Receivable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? syncedAt;
+  final String? purchaseId;
 
   // Calculated from payments
 
@@ -147,6 +148,7 @@ class Receivable {
     DateTime? createdAt,
     DateTime? updatedAt,
     this.syncedAt,
+    this.purchaseId,
     this.paidAmount = 0,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
@@ -201,6 +203,7 @@ class Receivable {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'synced_at': syncedAt?.toIso8601String(),
+      'purchase_id': purchaseId,
     };
   }
 
@@ -243,6 +246,7 @@ class Receivable {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? syncedAt,
+    String? purchaseId,
     double? paidAmount,
   }) {
     return Receivable(
@@ -259,6 +263,7 @@ class Receivable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       syncedAt: syncedAt ?? this.syncedAt,
+      purchaseId: purchaseId ?? this.purchaseId,
       paidAmount: paidAmount ?? this.paidAmount,
     );
   }

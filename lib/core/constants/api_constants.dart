@@ -3,10 +3,12 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Supabase Configuration
-  // Todo: Replace with actual Supabase credentials
-  static const String supabaseUrl = 'https://your-project.supabase.co';
-  static const String supabaseAnonKey = 'your-anon-key';
+  // Supabase Configuration - Obtener valores del archivo .env
+  // Asegúrate de usar un paquete como flutter_dotenv para cargar estos valores
+  static const String supabaseUrl =
+      'URL_DESDE_ENV'; // Reemplazar con dotenv.get('SUPABASE_URL')
+  static const String supabaseAnonKey =
+      'KEY_DESDE_ENV'; // Reemplazar con dotenv.get('SUPABASE_ANON_KEY')
 
   // Exchange Rate API (Banguat or alternative)
   static const String exchangeRateApiUrl =

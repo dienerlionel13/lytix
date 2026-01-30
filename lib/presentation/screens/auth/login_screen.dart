@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/glass_card.dart';
+import '../../../core/services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,12 +36,29 @@ class _LoginScreenState extends State<LoginScreen>
 
     setState(() => _isLoading = true);
 
-    // Simulate login
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.signIn(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error de autenticación: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -219,29 +238,43 @@ class _LoginScreenState extends State<LoginScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _rememberMe,
-                      onChanged: (value) {
-                        setState(() => _rememberMe = value ?? false);
-                      },
-                      activeColor: AppColors.primary,
-                      side: const BorderSide(color: Colors.white54),
-                    ),
-                    const Text(
-                      'Recordarme',
-                      style: TextStyle(color: Colors.white54, fontSize: 14),
-                    ),
-                  ],
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (value) {
+                          setState(() => _rememberMe = value ?? false);
+                        },
+                        activeColor: AppColors.primary,
+                        side: const BorderSide(color: Colors.white54),
+                      ),
+                      const Flexible(
+                        child: Text(
+                          'Recordarme',
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    // Handle forgot password
-                  },
-                  child: const Text(
-                    '¿Olvidaste tu contraseña?',
-                    style: TextStyle(fontSize: 14),
+                Flexible(
+                  child: TextButton(
+                    onPressed: () {
+                      // Handle forgot password
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      '¿Olvidaste tu contraseña?',
+                      style: TextStyle(fontSize: 13),
+                      textAlign: TextAlign.right,
+                    ),
                   ),
                 ),
               ],
@@ -269,7 +302,9 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         Row(
           children: [
-            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
+            Expanded(
+              child: Divider(color: Colors.white.withValues(alpha: 0.2)),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -280,7 +315,9 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
+            Expanded(
+              child: Divider(color: Colors.white.withValues(alpha: 0.2)),
+            ),
           ],
         ),
         const SizedBox(height: 20),

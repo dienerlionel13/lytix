@@ -14,6 +14,7 @@ class DbConstants {
   static const String cardsDatabase = 'lytix_cards.db';
   static const String budgetDatabase = 'lytix_budget.db';
   static const String assetsDatabase = 'lytix_assets.db';
+  static const String purchasesDatabase = 'lytix_purchases.db';
   static const String syncDatabase = 'lytix_sync.db';
 
   // Table Names - Users
@@ -40,6 +41,10 @@ class DbConstants {
   // Table Names - Assets
   static const String tableAssetCategories = 'asset_categories';
   static const String tableAssets = 'assets';
+
+  // Table Names - Shared Purchases
+  static const String tableSharedPurchases = 'shared_purchases';
+  static const String tablePurchaseSplits = 'purchase_splits';
 
   // Table Names - Exchange Rates
   static const String tableExchangeRates = 'exchange_rates';

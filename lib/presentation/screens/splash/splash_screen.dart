@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/biometric_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../data/datasources/local/database_helper.dart';
+import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -45,7 +47,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // Navigate to login or dashboard
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+        final authService = Provider.of<AuthService>(context, listen: false);
+        if (authService.isAuthenticated) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       }
     } catch (e) {
       setState(() => _statusText = 'Error: ${e.toString()}');

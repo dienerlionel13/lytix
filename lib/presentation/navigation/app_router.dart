@@ -22,6 +22,7 @@ import '../screens/assets/add_asset_screen.dart';
 import '../screens/assets/asset_detail_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/settings/currency_settings_screen.dart';
+import '../screens/purchases/add_shared_purchase_screen.dart';
 import '../../data/models/debtor.dart';
 import '../../data/models/creditor.dart';
 import '../../data/models/credit_card.dart';
@@ -61,6 +62,9 @@ class AppRouter {
   static const String assets = '/assets';
   static const String addAsset = '/asset/add';
   static const String assetDetail = '/asset/detail';
+
+  // Purchases
+  static const String addSharedPurchase = '/purchase/shared/add';
 
   // Settings
   static const String settingsRoute = '/settings';
@@ -156,6 +160,10 @@ class AppRouter {
       case assetDetail:
         final asset = settings.arguments as Asset;
         return _buildPageRoute(AssetDetailScreen(asset: asset), settings);
+
+      // Purchases
+      case addSharedPurchase:
+        return _buildPageRoute(const AddSharedPurchaseScreen(), settings);
 
       // Settings
       case settingsRoute:

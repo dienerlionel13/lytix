@@ -7,6 +7,7 @@ import 'schemas/debts_schema.dart';
 import 'schemas/cards_schema.dart';
 import 'schemas/budget_schema.dart';
 import 'schemas/assets_schema.dart';
+import 'schemas/purchases_schema.dart';
 import 'schemas/sync_schema.dart';
 
 /// Database Helper - Manages multiple SQLite databases
@@ -22,6 +23,7 @@ class DatabaseHelper {
   Database? _cardsDb;
   Database? _budgetDb;
   Database? _assetsDb;
+  Database? _purchasesDb;
   Database? _syncDb;
 
   bool _isInitialized = false;
@@ -62,6 +64,11 @@ class DatabaseHelper {
       join(dbPath, DbConstants.assetsDatabase),
       AssetsSchema.allStatements,
       seedStatements: AssetsSchema.seedStatements,
+    );
+
+    _purchasesDb = await _openDatabase(
+      join(dbPath, DbConstants.purchasesDatabase),
+      PurchasesSchema.allStatements,
     );
 
     _syncDb = await _openDatabase(
@@ -123,6 +130,12 @@ class DatabaseHelper {
   Database get assetsDb {
     if (_assetsDb == null) throw Exception('Assets database not initialized');
     return _assetsDb!;
+  }
+
+  Database get purchasesDb {
+    if (_purchasesDb == null)
+      throw Exception('Purchases database not initialized');
+    return _purchasesDb!;
   }
 
   Database get syncDb {
@@ -261,6 +274,7 @@ class DatabaseHelper {
     await _cardsDb?.close();
     await _budgetDb?.close();
     await _assetsDb?.close();
+    await _purchasesDb?.close();
     await _syncDb?.close();
     _isInitialized = false;
   }

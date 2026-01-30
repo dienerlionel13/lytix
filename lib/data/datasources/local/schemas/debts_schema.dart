@@ -40,6 +40,7 @@ class DebtsSchema {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       synced_at TEXT,
+      purchase_id TEXT,
       FOREIGN KEY (debtor_id) REFERENCES debtors(id) ON DELETE CASCADE
     )
   ''';
