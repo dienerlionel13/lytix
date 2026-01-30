@@ -25,6 +25,16 @@ class DebtsSchema {
     )
   ''';
 
+  static const String createTableReceivableCategories = '''
+    CREATE TABLE IF NOT EXISTS receivable_categories (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  ''';
+
   static const String createTableReceivables = '''
     CREATE TABLE IF NOT EXISTS receivables (
       id TEXT PRIMARY KEY,
@@ -41,7 +51,9 @@ class DebtsSchema {
       updated_at TEXT NOT NULL,
       synced_at TEXT,
       purchase_id TEXT,
-      FOREIGN KEY (debtor_id) REFERENCES debtors(id) ON DELETE CASCADE
+      category_id TEXT,
+      FOREIGN KEY (debtor_id) REFERENCES debtors(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES receivable_categories(id) ON DELETE SET NULL
     )
   ''';
 
@@ -124,6 +136,7 @@ class DebtsSchema {
     'CREATE INDEX IF NOT EXISTS idx_debtors_user ON debtors(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_receivables_debtor ON receivables(debtor_id)',
     'CREATE INDEX IF NOT EXISTS idx_receivables_status ON receivables(status)',
+    'CREATE INDEX IF NOT EXISTS idx_receivables_category ON receivables(category_id)',
     'CREATE INDEX IF NOT EXISTS idx_receivable_payments_receivable ON receivable_payments(receivable_id)',
     'CREATE INDEX IF NOT EXISTS idx_creditors_user ON creditors(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_payables_creditor ON payables(creditor_id)',
@@ -134,6 +147,7 @@ class DebtsSchema {
 
   static List<String> get allStatements => [
     createTableDebtors,
+    createTableReceivableCategories,
     createTableReceivables,
     createTableReceivablePayments,
     createTableCreditors,

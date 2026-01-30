@@ -5,7 +5,7 @@ class DbConstants {
   DbConstants._();
 
   // Database Version
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 3;
 
   // Individual Database Files
   static const String mainDatabase = 'lytix_main.db';
@@ -23,6 +23,7 @@ class DbConstants {
   // Table Names - Debts (Receivables)
   static const String tableDebtors = 'debtors';
   static const String tableReceivables = 'receivables';
+  static const String tableReceivableCategories = 'receivable_categories';
   static const String tableReceivablePayments = 'receivable_payments';
 
   // Table Names - Debts (Payables)

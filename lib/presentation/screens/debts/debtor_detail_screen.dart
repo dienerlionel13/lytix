@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/debtor.dart';
 import '../../widgets/common/glass_card.dart';
+import '../../../core/services/receivable_service.dart';
+import 'package:provider/provider.dart';
 
 class DebtorDetailScreen extends StatefulWidget {
   final Debtor debtor;
@@ -25,30 +27,28 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
   }
 
   Future<void> _loadReceivables() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _receivables.addAll([
-        Receivable(
-          debtorId: widget.debtor.id,
-          description: 'Préstamo personal',
-          initialAmount: 5000,
-          dateCreated: DateTime.now().subtract(const Duration(days: 30)),
-          dueDate: DateTime.now().add(const Duration(days: 30)),
-          paidAmount: 1500,
-        ),
-        Receivable(
-          debtorId: widget.debtor.id,
-          description: 'Compra de mercadería',
-          initialAmount: 2500,
-          dateCreated: DateTime.now().subtract(const Duration(days: 15)),
-          paidAmount: 0,
-        ),
-      ]);
-      _isLoading = false;
-    });
+    setState(() => _isLoading = true);
+    try {
+      final receivableService = Provider.of<ReceivableService>(
+        context,
+        listen: false,
+      );
+      final receivables = await receivableService.getReceivables(
+        widget.debtor.id,
+      );
+
+      setState(() {
+        _receivables.clear();
+        _receivables.addAll(receivables);
+      });
+    } catch (e) {
+      debugPrint('Error cargando deudas de deudor: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  double get _totalOwed =>
+  double get _netBalance =>
       _receivables.fold(0.0, (sum, r) => sum + r.pendingAmount);
   double get _totalPaid =>
       _receivables.fold(0.0, (sum, r) => sum + r.paidAmount);
@@ -197,19 +197,21 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
       children: [
         Expanded(
           child: _SummaryCard(
-            title: 'Por Cobrar',
-            amount: 'Q ${_totalOwed.toStringAsFixed(2)}',
-            color: AppColors.warning,
-            icon: Icons.pending_actions,
+            title: _netBalance >= 0 ? 'Me deben (Neto)' : 'Yo debo (Neto)',
+            amount: 'Q ${_netBalance.abs().toStringAsFixed(2)}',
+            color: _netBalance >= 0 ? AppColors.success : AppColors.error,
+            icon: _netBalance >= 0
+                ? Icons.account_balance_wallet
+                : Icons.warning_amber_rounded,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _SummaryCard(
-            title: 'Cobrado',
+            title: 'Pagos Recibidos',
             amount: 'Q ${_totalPaid.toStringAsFixed(2)}',
-            color: AppColors.success,
-            icon: Icons.check_circle_outline,
+            color: AppColors.primary,
+            icon: Icons.history,
           ),
         ),
       ],
@@ -365,8 +367,16 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
     );
   }
 
-  void _addReceivable() {
-    // Todo: Navigate to add receivable screen
+  void _addReceivable() async {
+    final result = await Navigator.pushNamed(
+      context,
+      '/debtor/receivable/add',
+      arguments: {'debtor': widget.debtor},
+    );
+
+    if (result == true) {
+      _loadReceivables();
+    }
   }
 
   void _showReceivableDetail(Receivable receivable) {
@@ -465,8 +475,10 @@ class _ReceivableCard extends StatelessWidget {
                 ),
                 Text(
                   receivable.formattedPendingAmount,
-                  style: const TextStyle(
-                    color: AppColors.warning,
+                  style: TextStyle(
+                    color: receivable.pendingAmount >= 0
+                        ? AppColors.success
+                        : AppColors.error,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

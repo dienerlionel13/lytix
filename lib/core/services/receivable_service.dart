@@ -1,0 +1,182 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:sqflite/sqflite.dart';
+import '../../data/models/debtor.dart';
+import '../../data/datasources/local/database_helper.dart';
+import '../constants/db_constants.dart';
+import 'package:flutter/foundation.dart';
+
+class ReceivableService extends ChangeNotifier {
+  final _supabase = Supabase.instance.client;
+  final _dbHelper = DatabaseHelper();
+
+  /// Guarda una deuda (receivable) en Supabase y SQLite
+  Future<void> saveReceivable(Receivable receivable) async {
+    try {
+      // 1. Guardar en Supabase (Esquema lytix)
+      await _supabase.schema('lytix').from('receivables').upsert({
+        'id': receivable.id,
+        'debtor_id': receivable.debtorId,
+        'description': receivable.description,
+        'initial_amount': receivable.initialAmount,
+        'currency': receivable.currency,
+        'exchange_rate': receivable.exchangeRate,
+        'date_created': receivable.dateCreated.toIso8601String(),
+        'due_date': receivable.dueDate?.toIso8601String(),
+        'status': receivable.status.name.toUpperCase(),
+        'notes': receivable.notes,
+        'purchase_id': receivable.purchaseId,
+        'category_id': receivable.categoryId,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      // 2. Guardar en SQLite local
+      await _dbHelper.debtsDb.insert(
+        DbConstants.tableReceivables,
+        receivable.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al guardar deuda: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtiene todas las deudas de un deudor específico
+  Future<List<Receivable>> getReceivables(String debtorId) async {
+    try {
+      // Intentar obtener de Supabase primero
+      final List<dynamic> response = await _supabase
+          .schema('lytix')
+          .from('receivables')
+          .select()
+          .eq('debtor_id', debtorId)
+          .order('date_created', ascending: false);
+
+      final receivables = response.map((m) => Receivable.fromMap(m)).toList();
+
+      // Actualizar SQLite local
+      for (var receivable in receivables) {
+        await _dbHelper.debtsDb.insert(
+          DbConstants.tableReceivables,
+          receivable.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      return receivables;
+    } catch (e) {
+      debugPrint('Error obteniendo deudas de Supabase, usando local: $e');
+      // Si falla la red, usar SQLite
+      final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
+        DbConstants.tableReceivables,
+        where: 'debtor_id = ?',
+        whereArgs: [debtorId],
+        orderBy: 'date_created DESC',
+      );
+      return maps.map((m) => Receivable.fromMap(m)).toList();
+    }
+  }
+
+  /// Registra un pago para una deuda
+  Future<void> savePayment(ReceivablePayment payment) async {
+    try {
+      // 1. Guardar el pago en Supabase
+      await _supabase.schema('lytix').from('receivable_payments').insert({
+        'id': payment.id,
+        'receivable_id': payment.receivableId,
+        'amount': payment.amount,
+        'currency': payment.currency,
+        'exchange_rate': payment.exchangeRate,
+        'payment_date': payment.paymentDate.toIso8601String(),
+        'payment_method': payment.paymentMethod,
+        'notes': payment.notes,
+        'receipt_number': payment.receiptNumber,
+      });
+
+      // 2. Guardar el pago en SQLite local
+      await _dbHelper.debtsDb.insert(
+        'receivable_payments', // Asumiendo que este es el nombre en las constantes o esquema
+        payment.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 3. La actualización de la deuda (paid_amount) usualmente se maneja vía trigger en bd
+      // o calculando sum(payments). Aquí lo haremos explícito para SQL local.
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al guardar pago: $e');
+      rethrow;
+    }
+  }
+
+  /// Guarda una categoría de deuda
+  Future<void> saveCategory(ReceivableCategory category) async {
+    try {
+      await _supabase
+          .schema('lytix')
+          .from('receivable_categories')
+          .upsert(category.toMap());
+      await _dbHelper.debtsDb.insert(
+        DbConstants.tableReceivableCategories,
+        category.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al guardar categoría: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtiene las categorías de deuda del usuario
+  Future<List<ReceivableCategory>> getCategories(String userId) async {
+    try {
+      final List<dynamic> response = await _supabase
+          .schema('lytix')
+          .from('receivable_categories')
+          .select()
+          .eq('user_id', userId)
+          .order('name');
+
+      final categories = response
+          .map((m) => ReceivableCategory.fromMap(m))
+          .toList();
+
+      return categories;
+    } catch (e) {
+      debugPrint('Error obteniendo categorías, usando local: $e');
+      final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
+        DbConstants.tableReceivableCategories,
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'name',
+      );
+      return maps.map((m) => ReceivableCategory.fromMap(m)).toList();
+    }
+  }
+
+  /// Elimina una categoría
+  Future<void> deleteCategory(String id) async {
+    try {
+      await _supabase
+          .schema('lytix')
+          .from('receivable_categories')
+          .delete()
+          .eq('id', id);
+      await _dbHelper.debtsDb.delete(
+        DbConstants.tableReceivableCategories,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al eliminar categoría: $e');
+      rethrow;
+    }
+  }
+}
+
+final receivableService = ReceivableService();

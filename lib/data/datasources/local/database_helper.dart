@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/db_constants.dart';
 import 'schemas/users_schema.dart';
@@ -98,7 +99,21 @@ class DatabaseHelper {
         }
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Handle migrations here
+        if (oldVersion < 3) {
+          // Si es la base de datos de deudas, agregar la columna de categoría
+          if (path.contains(DbConstants.debtsDatabase)) {
+            try {
+              // 1. Crear la tabla de categorías si no existe
+              await db.execute(DebtsSchema.createTableReceivableCategories);
+              // 2. Agregar la columna a receivables
+              await db.execute(
+                'ALTER TABLE receivables ADD COLUMN category_id TEXT',
+              );
+            } catch (e) {
+              debugPrint('Error en migración de deudas: $e');
+            }
+          }
+        }
       },
     );
   }
@@ -108,38 +123,51 @@ class DatabaseHelper {
   // =============================================
 
   Database get usersDb {
-    if (_usersDb == null) throw Exception('Users database not initialized');
+    if (_usersDb == null) {
+      throw Exception('Users database not initialized');
+    }
     return _usersDb!;
   }
 
   Database get debtsDb {
-    if (_debtsDb == null) throw Exception('Debts database not initialized');
+    if (_debtsDb == null) {
+      throw Exception('Debts database not initialized');
+    }
     return _debtsDb!;
   }
 
   Database get cardsDb {
-    if (_cardsDb == null) throw Exception('Cards database not initialized');
+    if (_cardsDb == null) {
+      throw Exception('Cards database not initialized');
+    }
     return _cardsDb!;
   }
 
   Database get budgetDb {
-    if (_budgetDb == null) throw Exception('Budget database not initialized');
+    if (_budgetDb == null) {
+      throw Exception('Budget database not initialized');
+    }
     return _budgetDb!;
   }
 
   Database get assetsDb {
-    if (_assetsDb == null) throw Exception('Assets database not initialized');
+    if (_assetsDb == null) {
+      throw Exception('Assets database not initialized');
+    }
     return _assetsDb!;
   }
 
   Database get purchasesDb {
-    if (_purchasesDb == null)
+    if (_purchasesDb == null) {
       throw Exception('Purchases database not initialized');
+    }
     return _purchasesDb!;
   }
 
   Database get syncDb {
-    if (_syncDb == null) throw Exception('Sync database not initialized');
+    if (_syncDb == null) {
+      throw Exception('Sync database not initialized');
+    }
     return _syncDb!;
   }
 

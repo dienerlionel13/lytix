@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/debtor_service.dart';
+import 'core/services/receivable_service.dart';
 import 'presentation/navigation/app_router.dart';
 
 void main() async {
@@ -53,6 +54,8 @@ class LytixApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: authService),
         // Debtor Service
         ChangeNotifierProvider.value(value: debtorService),
+        // Receivable Service
+        ChangeNotifierProvider.value(value: receivableService),
       ],
       child: MaterialApp(
         title: 'Lytix',

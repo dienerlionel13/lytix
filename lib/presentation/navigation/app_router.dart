@@ -7,6 +7,8 @@ import '../screens/about/about_screen.dart';
 import '../screens/debts/debtors_list_screen.dart';
 import '../screens/debts/add_debtor_screen.dart';
 import '../screens/debts/debtor_detail_screen.dart';
+import '../screens/debts/add_receivable_screen.dart';
+import '../screens/debts/receivable_categories_screen.dart';
 import '../screens/debts/creditors_list_screen.dart';
 import '../screens/debts/add_creditor_screen.dart';
 import '../screens/cards/cards_list_screen.dart';
@@ -42,6 +44,8 @@ class AppRouter {
   static const String debtors = '/debtors';
   static const String addDebtor = '/debtor/add';
   static const String debtorDetail = '/debtor/detail';
+  static const String addReceivable = '/debtor/receivable/add';
+  static const String receivableCategories = '/debtor/categories';
   static const String creditors = '/creditors';
   static const String addCreditor = '/creditor/add';
   static const String creditorDetail = '/creditor/detail';
@@ -99,6 +103,23 @@ class AppRouter {
       case debtorDetail:
         final debtor = settings.arguments as Debtor;
         return _buildPageRoute(DebtorDetailScreen(debtor: debtor), settings);
+
+      case addReceivable:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _buildPageRoute(
+          AddReceivableScreen(
+            debtor: args['debtor'] as Debtor,
+            receivable: args['receivable'] as Receivable?,
+          ),
+          settings,
+        );
+
+      case receivableCategories:
+        final userId = settings.arguments as String;
+        return _buildPageRoute(
+          ReceivableCategoriesScreen(userId: userId),
+          settings,
+        );
 
       // Creditors (Cuentas por Pagar)
       case creditors:

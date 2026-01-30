@@ -27,8 +27,8 @@ class _AddSharedPurchaseScreenState extends State<AddSharedPurchaseScreen> {
   CreditCard? _selectedCard;
 
   List<Debtor> _allDebtors = [];
-  List<Debtor> _selectedDebtors = [];
-  Map<String, double> _manualSplits = {};
+  final List<Debtor> _selectedDebtors = [];
+  final Map<String, double> _manualSplits = {};
 
   bool _isLoading = false;
   bool _isEqualSplit = true;
@@ -77,7 +77,9 @@ class _AddSharedPurchaseScreenState extends State<AddSharedPurchaseScreen> {
   }
 
   Future<void> _savePurchase() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -361,10 +363,11 @@ class _AddSharedPurchaseScreenState extends State<AddSharedPurchaseScreen> {
                   ),
                   onChanged: (v) {
                     setDialogState(() {
-                      if (v!)
+                      if (v!) {
                         _selectedDebtors.add(d);
-                      else
+                      } else {
                         _selectedDebtors.remove(d);
+                      }
                     });
                     setState(() => _calculateSplits());
                   },

@@ -131,6 +131,7 @@ class Receivable {
   final DateTime updatedAt;
   final DateTime? syncedAt;
   final String? purchaseId;
+  final String? categoryId;
 
   // Calculated from payments
 
@@ -149,6 +150,7 @@ class Receivable {
     DateTime? updatedAt,
     this.syncedAt,
     this.purchaseId,
+    this.categoryId,
     this.paidAmount = 0,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
@@ -204,6 +206,7 @@ class Receivable {
       'updated_at': updatedAt.toIso8601String(),
       'synced_at': syncedAt?.toIso8601String(),
       'purchase_id': purchaseId,
+      'category_id': categoryId,
     };
   }
 
@@ -229,6 +232,8 @@ class Receivable {
       syncedAt: map['synced_at'] != null
           ? DateTime.parse(map['synced_at'] as String)
           : null,
+      purchaseId: map['purchase_id'] as String?,
+      categoryId: map['category_id'] as String?,
     );
   }
 
@@ -247,6 +252,7 @@ class Receivable {
     DateTime? updatedAt,
     DateTime? syncedAt,
     String? purchaseId,
+    String? categoryId,
     double? paidAmount,
   }) {
     return Receivable(
@@ -264,6 +270,7 @@ class Receivable {
       updatedAt: updatedAt ?? DateTime.now(),
       syncedAt: syncedAt ?? this.syncedAt,
       purchaseId: purchaseId ?? this.purchaseId,
+      categoryId: categoryId ?? this.categoryId,
       paidAmount: paidAmount ?? this.paidAmount,
     );
   }
@@ -337,6 +344,45 @@ class ReceivablePayment {
       syncedAt: map['synced_at'] != null
           ? DateTime.parse(map['synced_at'] as String)
           : null,
+    );
+  }
+}
+
+/// Receivable Category Model
+class ReceivableCategory {
+  final String id;
+  final String userId;
+  final String name;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  ReceivableCategory({
+    String? id,
+    required this.userId,
+    required this.name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) : id = id ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'name': name,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory ReceivableCategory.fromMap(Map<String, dynamic> map) {
+    return ReceivableCategory(
+      id: map['id'] as String,
+      userId: map['user_id'] as String,
+      name: map['name'] as String,
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 }
