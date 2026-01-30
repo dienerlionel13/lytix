@@ -3,6 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/debtor.dart';
 import '../../widgets/common/glass_card.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/debtor_service.dart';
+import 'package:provider/provider.dart';
 
 class DebtorsListScreen extends StatefulWidget {
   const DebtorsListScreen({super.key});
@@ -23,26 +26,25 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
   }
 
   Future<void> _loadDebtors() async {
-    // Simulated data - replace with repository call
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _debtors.addAll([
-        Debtor(
-          userId: 'user1',
-          name: 'Juan Pérez',
-          phone: '5555-1234',
-          email: 'juan@email.com',
-        ),
-        Debtor(userId: 'user1', name: 'María García', phone: '5555-5678'),
-        Debtor(
-          userId: 'user1',
-          name: 'Carlos López',
-          email: 'carlos@empresa.com',
-          notes: 'Cliente frecuente',
-        ),
-      ]);
-      _isLoading = false;
-    });
+    setState(() => _isLoading = true);
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final debtorService = Provider.of<DebtorService>(context, listen: false);
+
+      if (authService.currentUser != null) {
+        final debtors = await debtorService.getDebtors(
+          authService.currentUser!.id,
+        );
+        setState(() {
+          _debtors.clear();
+          _debtors.addAll(debtors);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error cargando deudores: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   List<Debtor> get _filteredDebtors {

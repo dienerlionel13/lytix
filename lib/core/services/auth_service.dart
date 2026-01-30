@@ -12,10 +12,42 @@ class AuthService extends ChangeNotifier {
 
   AuthService() {
     _currentUser = _supabase.auth.currentUser;
+    if (_currentUser != null) {
+      _loadUserDetails();
+    }
     _supabase.auth.onAuthStateChange.listen((data) {
       _currentUser = data.session?.user;
-      notifyListeners();
+      if (_currentUser != null) {
+        _loadUserDetails();
+      } else {
+        notifyListeners();
+      }
     });
+  }
+
+  Future<void> _loadUserDetails() async {
+    try {
+      final response = await _supabase
+          .schema('lytix')
+          .from('users')
+          .select()
+          .eq('id', _currentUser!.id)
+          .maybeSingle();
+
+      if (response == null) {
+        // Si el usuario existe en Auth pero no en lytix.users, lo creamos
+        await _supabase.schema('lytix').from('users').insert({
+          'id': _currentUser!.id,
+          'email': _currentUser!.email,
+          'display_name': _currentUser!.userMetadata?['display_name'],
+          'photo_url': _currentUser!.userMetadata?['avatar_url'],
+        });
+      }
+    } catch (e) {
+      debugPrint('Error verificando usuario en lytix.users: $e');
+    } finally {
+      notifyListeners();
+    }
   }
 
   /// Inicia sesión con email y contraseña
@@ -23,6 +55,7 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
     try {
       await _supabase.auth.signInWithPassword(email: email, password: password);
+      await _loadUserDetails();
     } catch (e) {
       rethrow;
     } finally {

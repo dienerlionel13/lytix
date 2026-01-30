@@ -4,6 +4,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/debtor.dart';
 import '../../widgets/common/glass_card.dart';
 import '../../widgets/common/gradient_button.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/debtor_service.dart';
+import 'package:provider/provider.dart';
 
 class AddDebtorScreen extends StatefulWidget {
   final Debtor? debtor; // null for new, populated for edit
@@ -88,10 +91,17 @@ class _AddDebtorScreenState extends State<AddDebtorScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final debtorService = Provider.of<DebtorService>(context, listen: false);
+
+      if (authService.currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
       // Create/update debtor
       final debtor = Debtor(
         id: widget.debtor?.id,
-        userId: 'current_user', // Todo: Get from auth service
+        userId: authService.currentUser!.id,
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim().isEmpty
             ? null
@@ -107,8 +117,8 @@ class _AddDebtorScreenState extends State<AddDebtorScreen> {
             : _notesController.text.trim(),
       );
 
-      // Todo: Save to repository
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Save to Supabase and Local
+      await debtorService.saveDebtor(debtor);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
