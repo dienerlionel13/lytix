@@ -44,6 +44,7 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
         setState(() {
           _debtors.clear();
           _debtors.addAll(debtors);
+          _debtors.sort((a, b) => a.name.compareTo(b.name));
           _allReceivables.clear();
           _allReceivables.addAll(receivables);
         });
@@ -55,11 +56,21 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
     }
   }
 
-  double get _globalBalance {
+  double get _globalReceivable {
     // Solo sumamos los saldos positivos (lo que me deben)
     return _allReceivables
         .where((r) => r.initialAmount > 0)
         .fold(0.0, (sum, r) => sum + r.pendingAmount);
+  }
+
+  double get _globalPayable {
+    // Solo sumamos los saldos negativos (lo que yo debo)
+    // El monto inicial es negativo en el modelo, pero pendingAmount también lo será.
+    // Devolvemos el valor absoluto para mostrarlo en positivo en la etiqueta "Le Debo"
+    return _allReceivables
+        .where((r) => r.initialAmount < 0)
+        .fold(0.0, (sum, r) => sum + r.pendingAmount)
+        .abs();
   }
 
   double _getDebtorBalance(String debtorId) {
@@ -93,6 +104,7 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
           child: Column(
             children: [
               _buildHeader(),
+              _buildSummaryRow(),
               _buildSearchBar(),
               Expanded(child: _buildDebtorsList()),
             ],
@@ -143,31 +155,62 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
             },
             icon: const Icon(Icons.person_add_outlined, color: Colors.white),
           ),
-          const SizedBox(width: 8),
-          _buildTotalReceivables(),
         ],
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.2);
   }
 
-  Widget _buildTotalReceivables() {
+  Widget _buildSummaryRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSummaryCard(
+              label: 'Por Cobrar',
+              amount: _globalReceivable,
+              color: AppColors.success,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildSummaryCard(
+              label: 'Por Pagar',
+              amount: _globalPayable,
+              color: AppColors.error,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms, delay: 50.ms);
+  }
+
+  Widget _buildSummaryCard({
+    required String label,
+    required double amount,
+    required Color color,
+  }) {
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      borderRadius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Text(
-            'Por Cobrar',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 4),
           Text(
-            _currencyFormat.format(_globalBalance),
-            style: TextStyle(
-              color: _globalBalance >= 0 ? AppColors.success : AppColors.error,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              _currencyFormat.format(amount),
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
             ),
           ),
         ],
@@ -229,33 +272,37 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _filteredDebtors.length,
-      itemBuilder: (context, index) {
-        final debtor = _filteredDebtors[index];
-        final balance = _getDebtorBalance(debtor.id);
-        final count = _getDebtorDebtCount(debtor.id);
-        return _DebtorCard(
-              debtor: debtor,
-              balance: balance,
-              debtCount: count,
-              currencyFormat: _currencyFormat,
-              onTap: () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  '/debtor/detail',
-                  arguments: debtor,
-                );
-                if (result != null) {
+    return RefreshIndicator(
+      onRefresh: _loadDebtors,
+      color: AppColors.primary,
+      backgroundColor: AppColors.surfaceDark,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: _filteredDebtors.length,
+        itemBuilder: (context, index) {
+          final debtor = _filteredDebtors[index];
+          final balance = _getDebtorBalance(debtor.id);
+          final count = _getDebtorDebtCount(debtor.id);
+          return _DebtorCard(
+                debtor: debtor,
+                balance: balance,
+                debtCount: count,
+                currencyFormat: _currencyFormat,
+                onTap: () async {
+                  await Navigator.pushNamed(
+                    context,
+                    '/debtor/detail',
+                    arguments: debtor,
+                  );
+                  // Siempre recargamos al volver para asegurar datos frescos
                   _loadDebtors();
-                }
-              },
-            )
-            .animate(delay: Duration(milliseconds: 50 * index))
-            .fadeIn(duration: 300.ms)
-            .slideX(begin: 0.1);
-      },
+                },
+              )
+              .animate(delay: Duration(milliseconds: 50 * index))
+              .fadeIn(duration: 300.ms)
+              .slideX(begin: 0.1);
+        },
+      ),
     );
   }
 }
@@ -366,7 +413,7 @@ class _DebtorCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    balance >= 0 ? 'Me debe' : 'Le debo',
+                    balance >= 0 ? 'Me debe' : 'Por Pagar',
                     style: TextStyle(
                       color: balance >= 0 ? AppColors.success : AppColors.error,
                       fontSize: 10,

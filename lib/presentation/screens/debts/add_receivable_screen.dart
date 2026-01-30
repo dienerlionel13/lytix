@@ -276,25 +276,28 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Deudor',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Deudor',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                            Text(
-                              widget.debtor.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                              Text(
+                                widget.debtor.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -449,30 +452,33 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                               size: 20,
                             ),
                             const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Fecha de pertenencia (Opcional)',
-                                  style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Fecha de pertenencia (Opcional)',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                Text(
-                                  _transactionDate != null
-                                      ? DateFormat(
-                                          'dd/MM/yyyy',
-                                        ).format(_transactionDate!)
-                                      : 'Elegir fecha...',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
+                                  Text(
+                                    _transactionDate != null
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(_transactionDate!)
+                                        : 'Elegir fecha...',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                            const Spacer(),
                             if (_transactionDate != null)
                               IconButton(
                                 icon: const Icon(
@@ -509,30 +515,33 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                               size: 20,
                             ),
                             const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Fecha de vencimiento (Opcional)',
-                                  style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Fecha de vencimiento (Opcional)',
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                Text(
-                                  _dueDate != null
-                                      ? DateFormat(
-                                          'dd/MM/yyyy',
-                                        ).format(_dueDate!)
-                                      : 'No establecida',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
+                                  Text(
+                                    _dueDate != null
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(_dueDate!)
+                                        : 'No establecida',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                            const Spacer(),
                             if (_dueDate != null)
                               IconButton(
                                 icon: const Icon(

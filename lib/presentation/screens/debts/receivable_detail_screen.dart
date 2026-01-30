@@ -192,9 +192,6 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
         color = AppColors.info;
         text = 'PENDIENTE';
         break;
-      default:
-        color = AppColors.info;
-        text = 'PENDIENTE';
     }
 
     return Container(
