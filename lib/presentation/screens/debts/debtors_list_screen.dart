@@ -75,7 +75,12 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/debtor/add'),
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/debtor/add');
+          if (result != null) {
+            _loadDebtors();
+          }
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ).animate().scale(delay: 300.ms, duration: 300.ms),
@@ -206,11 +211,16 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
         final debtor = _filteredDebtors[index];
         return _DebtorCard(
               debtor: debtor,
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/debtor/detail',
-                arguments: debtor,
-              ),
+              onTap: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  '/debtor/detail',
+                  arguments: debtor,
+                );
+                if (result != null) {
+                  _loadDebtors();
+                }
+              },
             )
             .animate(delay: Duration(milliseconds: 50 * index))
             .fadeIn(duration: 300.ms)
