@@ -26,6 +26,8 @@ class ReceivableService extends ChangeNotifier {
         'notes': receivable.notes,
         'purchase_id': receivable.purchaseId,
         'category_id': receivable.categoryId,
+        'debtor_name': receivable.debtorName,
+        'balance_type': receivable.balanceType,
         'updated_at': DateTime.now().toIso8601String(),
       });
 
@@ -46,7 +48,6 @@ class ReceivableService extends ChangeNotifier {
   /// Obtiene todas las deudas de un deudor específico
   Future<List<Receivable>> getReceivables(String debtorId) async {
     try {
-      // Intentar obtener de Supabase primero
       final List<dynamic> response = await _supabase
           .schema('lytix')
           .from('receivables')
@@ -56,7 +57,6 @@ class ReceivableService extends ChangeNotifier {
 
       final receivables = response.map((m) => Receivable.fromMap(m)).toList();
 
-      // Actualizar SQLite local
       for (var receivable in receivables) {
         await _dbHelper.debtsDb.insert(
           DbConstants.tableReceivables,
@@ -68,12 +68,37 @@ class ReceivableService extends ChangeNotifier {
       return receivables;
     } catch (e) {
       debugPrint('Error obteniendo deudas de Supabase, usando local: $e');
-      // Si falla la red, usar SQLite
       final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
         DbConstants.tableReceivables,
         where: 'debtor_id = ?',
         whereArgs: [debtorId],
         orderBy: 'date_created DESC',
+      );
+      return maps.map((m) => Receivable.fromMap(m)).toList();
+    }
+  }
+
+  /// Obtiene todas las deudas de todos los deudores de un usuario
+  Future<List<Receivable>> getAllUserReceivables(String userId) async {
+    try {
+      // Usar join para filtrar por user_id a través de debtors
+      final List<dynamic> response = await _supabase
+          .schema('lytix')
+          .from('receivables')
+          .select('*, debtors!inner(user_id)')
+          .eq('debtors.user_id', userId);
+
+      return response.map((m) => Receivable.fromMap(m)).toList();
+    } catch (e) {
+      debugPrint('Error obteniendo todas las deudas, usando local: $e');
+      // En local es un poco más complejo el join manual o simplemente traer todo
+      final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.rawQuery(
+        '''
+        SELECT r.* FROM receivables r
+        JOIN debtors d ON r.debtor_id = d.id
+        WHERE d.user_id = ?
+      ''',
+        [userId],
       );
       return maps.map((m) => Receivable.fromMap(m)).toList();
     }

@@ -132,6 +132,9 @@ class Receivable {
   final DateTime? syncedAt;
   final String? purchaseId;
   final String? categoryId;
+  final String? debtorName;
+  final String? balanceType;
+  final DateTime? transactionDate;
 
   // Calculated from payments
 
@@ -151,6 +154,9 @@ class Receivable {
     this.syncedAt,
     this.purchaseId,
     this.categoryId,
+    this.debtorName,
+    this.balanceType,
+    this.transactionDate,
     this.paidAmount = 0,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now(),
@@ -207,6 +213,9 @@ class Receivable {
       'synced_at': syncedAt?.toIso8601String(),
       'purchase_id': purchaseId,
       'category_id': categoryId,
+      'debtor_name': debtorName,
+      'balance_type': balanceType,
+      'transaction_date': transactionDate?.toIso8601String(),
     };
   }
 
@@ -234,6 +243,11 @@ class Receivable {
           : null,
       purchaseId: map['purchase_id'] as String?,
       categoryId: map['category_id'] as String?,
+      debtorName: map['debtor_name'] as String?,
+      balanceType: map['balance_type'] as String?,
+      transactionDate: map['transaction_date'] != null
+          ? DateTime.parse(map['transaction_date'] as String)
+          : null,
     );
   }
 
@@ -253,6 +267,9 @@ class Receivable {
     DateTime? syncedAt,
     String? purchaseId,
     String? categoryId,
+    String? debtorName,
+    String? balanceType,
+    DateTime? transactionDate,
     double? paidAmount,
   }) {
     return Receivable(
@@ -271,6 +288,9 @@ class Receivable {
       syncedAt: syncedAt ?? this.syncedAt,
       purchaseId: purchaseId ?? this.purchaseId,
       categoryId: categoryId ?? this.categoryId,
+      debtorName: debtorName ?? this.debtorName,
+      balanceType: balanceType ?? this.balanceType,
+      transactionDate: transactionDate ?? this.transactionDate,
       paidAmount: paidAmount ?? this.paidAmount,
     );
   }

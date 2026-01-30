@@ -99,18 +99,31 @@ class DatabaseHelper {
         }
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 3) {
-          // Si es la base de datos de deudas, agregar la columna de categoría
+        if (oldVersion < 4) {
           if (path.contains(DbConstants.debtsDatabase)) {
             try {
-              // 1. Crear la tabla de categorías si no existe
+              // Asegurar tabla de categorías
               await db.execute(DebtsSchema.createTableReceivableCategories);
-              // 2. Agregar la columna a receivables
-              await db.execute(
-                'ALTER TABLE receivables ADD COLUMN category_id TEXT',
-              );
+
+              // Intentar agregar cada columna individualmente para evitar fallos si alguna ya existe
+              final columns = [
+                'category_id TEXT',
+                'debtor_name TEXT',
+                'balance_type TEXT',
+                'transaction_date TEXT',
+              ];
+
+              for (var column in columns) {
+                try {
+                  await db.execute(
+                    'ALTER TABLE receivables ADD COLUMN $column',
+                  );
+                } catch (_) {
+                  // Ignorar si la columna ya existe
+                }
+              }
             } catch (e) {
-              debugPrint('Error en migración de deudas: $e');
+              debugPrint('Error en migración de deudas (v4): $e');
             }
           }
         }

@@ -25,6 +25,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
   late TextEditingController _amountController;
   late TextEditingController _notesController;
   DateTime? _dueDate;
+  DateTime? _transactionDate;
   String? _selectedCategoryId;
   List<ReceivableCategory> _categories = [];
   bool _isPositiveBalance = true; // true = Él me debe, false = Yo le debo
@@ -46,6 +47,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
     );
     _notesController = TextEditingController(text: widget.receivable?.notes);
     _dueDate = widget.receivable?.dueDate;
+    _transactionDate = widget.receivable?.transactionDate;
     _selectedCategoryId = widget.receivable?.categoryId;
     if (widget.receivable != null) {
       _isPositiveBalance = widget.receivable!.initialAmount >= 0;
@@ -115,6 +117,33 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
     }
   }
 
+  Future<void> _selectTransactionDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _transactionDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 3650)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: AppColors.surfaceDark,
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _transactionDate) {
+      setState(() {
+        _transactionDate = picked;
+      });
+    }
+  }
+
   Future<void> _saveReceivable() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -138,6 +167,9 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
         initialAmount: finalAmount,
         dueDate: _dueDate,
         categoryId: _selectedCategoryId,
+        debtorName: widget.debtor.name,
+        balanceType: _isPositiveBalance ? 'Por Cobrar' : 'Por Pagar',
+        transactionDate: _transactionDate,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -278,7 +310,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                       children: [
                         Expanded(
                           child: _BalanceTypeCard(
-                            title: 'Él me debe',
+                            title: 'Por Cobrar',
                             isSelected: _isPositiveBalance,
                             color: AppColors.success,
                             icon: Icons.add_circle_outline,
@@ -289,7 +321,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _BalanceTypeCard(
-                            title: 'Yo le debo',
+                            title: 'Por Pagar',
                             isSelected: !_isPositiveBalance,
                             color: AppColors.error,
                             icon: Icons.remove_circle_outline,
@@ -394,6 +426,66 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Transaction Date (Fecha de Pertenencia)
+                    InkWell(
+                      onTap: () => _selectTransactionDate(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.event,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Fecha de pertenencia (Opcional)',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  _transactionDate != null
+                                      ? DateFormat(
+                                          'dd/MM/yyyy',
+                                        ).format(_transactionDate!)
+                                      : 'Elegir fecha...',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            if (_transactionDate != null)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white54,
+                                  size: 20,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _transactionDate = null),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
 

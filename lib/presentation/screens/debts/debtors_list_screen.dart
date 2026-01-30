@@ -5,6 +5,8 @@ import '../../../data/models/debtor.dart';
 import '../../widgets/common/glass_card.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/debtor_service.dart';
+import '../../../core/services/receivable_service.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class DebtorsListScreen extends StatefulWidget {
@@ -16,8 +18,11 @@ class DebtorsListScreen extends StatefulWidget {
 
 class _DebtorsListScreenState extends State<DebtorsListScreen> {
   final List<Debtor> _debtors = [];
+  final List<Receivable> _allReceivables = [];
   bool _isLoading = true;
   String _searchQuery = '';
+
+  final _currencyFormat = NumberFormat.currency(symbol: 'Q', decimalDigits: 2);
 
   @override
   void initState() {
@@ -26,25 +31,45 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
   }
 
   Future<void> _loadDebtors() async {
-    setState(() => _isLoading = true);
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final debtorService = Provider.of<DebtorService>(context, listen: false);
+      final recService = Provider.of<ReceivableService>(context, listen: false);
 
       if (authService.currentUser != null) {
-        final debtors = await debtorService.getDebtors(
-          authService.currentUser!.id,
-        );
+        final userId = authService.currentUser!.id;
+        final debtors = await debtorService.getDebtors(userId);
+        final receivables = await recService.getAllUserReceivables(userId);
+
         setState(() {
           _debtors.clear();
           _debtors.addAll(debtors);
+          _allReceivables.clear();
+          _allReceivables.addAll(receivables);
         });
       }
     } catch (e) {
-      debugPrint('Error cargando deudores: $e');
+      debugPrint('Error cargando datos de deudores: $e');
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  double get _globalBalance {
+    // Solo sumamos los saldos positivos (lo que me deben)
+    return _allReceivables
+        .where((r) => r.initialAmount > 0)
+        .fold(0.0, (sum, r) => sum + r.pendingAmount);
+  }
+
+  double _getDebtorBalance(String debtorId) {
+    return _allReceivables
+        .where((r) => r.debtorId == debtorId)
+        .fold(0.0, (sum, r) => sum + r.pendingAmount);
+  }
+
+  int _getDebtorDebtCount(String debtorId) {
+    return _allReceivables.where((r) => r.debtorId == debtorId).length;
   }
 
   List<Debtor> get _filteredDebtors {
@@ -138,9 +163,9 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Q 15,500.00',
+            _currencyFormat.format(_globalBalance),
             style: TextStyle(
-              color: AppColors.success,
+              color: _globalBalance >= 0 ? AppColors.success : AppColors.error,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -209,8 +234,13 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
       itemCount: _filteredDebtors.length,
       itemBuilder: (context, index) {
         final debtor = _filteredDebtors[index];
+        final balance = _getDebtorBalance(debtor.id);
+        final count = _getDebtorDebtCount(debtor.id);
         return _DebtorCard(
               debtor: debtor,
+              balance: balance,
+              debtCount: count,
+              currencyFormat: _currencyFormat,
               onTap: () async {
                 final result = await Navigator.pushNamed(
                   context,
@@ -232,9 +262,18 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
 
 class _DebtorCard extends StatelessWidget {
   final Debtor debtor;
+  final double balance;
+  final int debtCount;
+  final NumberFormat currencyFormat;
   final VoidCallback onTap;
 
-  const _DebtorCard({required this.debtor, required this.onTap});
+  const _DebtorCard({
+    required this.debtor,
+    required this.balance,
+    required this.debtCount,
+    required this.currencyFormat,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -307,10 +346,10 @@ class _DebtorCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  'Q 5,000.00',
+                Text(
+                  currencyFormat.format(balance.abs()),
                   style: TextStyle(
-                    color: AppColors.success,
+                    color: balance >= 0 ? AppColors.success : AppColors.error,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -322,13 +361,22 @@ class _DebtorCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.2),
+                    color: (balance >= 0 ? AppColors.success : AppColors.error)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    '2 deudas',
-                    style: TextStyle(color: AppColors.warning, fontSize: 11),
+                  child: Text(
+                    balance >= 0 ? 'Me debe' : 'Le debo',
+                    style: TextStyle(
+                      color: balance >= 0 ? AppColors.success : AppColors.error,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                ),
+                Text(
+                  '$debtCount ${debtCount == 1 ? 'deuda' : 'deudas'}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 10),
                 ),
               ],
             ),

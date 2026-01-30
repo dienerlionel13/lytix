@@ -54,11 +54,12 @@ class _ReceivableCategoriesScreenState
       _nameController.clear();
       _loadCategories();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -68,6 +69,7 @@ class _ReceivableCategoriesScreenState
       await service.deleteCategory(id);
       _loadCategories();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
       );

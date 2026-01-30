@@ -31,7 +31,7 @@ class _AddSharedPurchaseScreenState extends State<AddSharedPurchaseScreen> {
   final Map<String, double> _manualSplits = {};
 
   bool _isLoading = false;
-  bool _isEqualSplit = true;
+  final bool _isEqualSplit = true;
 
   @override
   void initState() {

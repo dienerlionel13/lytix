@@ -52,6 +52,8 @@ class DebtsSchema {
       synced_at TEXT,
       purchase_id TEXT,
       category_id TEXT,
+      debtor_name TEXT,
+      balance_type TEXT,
       FOREIGN KEY (debtor_id) REFERENCES debtors(id) ON DELETE CASCADE,
       FOREIGN KEY (category_id) REFERENCES receivable_categories(id) ON DELETE SET NULL
     )
