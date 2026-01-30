@@ -107,11 +107,6 @@ class _BudgetScreenState extends State<BudgetScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/budget/add'),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ).animate().scale(delay: 300.ms, duration: 300.ms),
     );
   }
 

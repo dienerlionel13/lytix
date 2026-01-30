@@ -99,16 +99,6 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.pushNamed(context, '/debtor/add');
-          if (result != null) {
-            _loadDebtors();
-          }
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ).animate().scale(delay: 300.ms, duration: 300.ms),
     );
   }
 
@@ -144,6 +134,16 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
               ],
             ),
           ),
+          IconButton(
+            onPressed: () async {
+              final result = await Navigator.pushNamed(context, '/debtor/add');
+              if (result != null) {
+                _loadDebtors();
+              }
+            },
+            icon: const Icon(Icons.person_add_outlined, color: Colors.white),
+          ),
+          const SizedBox(width: 8),
           _buildTotalReceivables(),
         ],
       ),

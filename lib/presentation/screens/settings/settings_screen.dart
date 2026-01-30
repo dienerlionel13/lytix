@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/auth_service.dart';
 import '../../widgets/common/glass_card.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -94,6 +96,37 @@ class SettingsScreen extends StatelessWidget {
                             subtitle: 'Español',
                             onTap: () {
                               // Todo: Language settings
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      _buildSection(
+                        title: 'Catálogos',
+                        items: [
+                          _SettingItem(
+                            icon: Icons.people_outlined,
+                            title: 'Deudores',
+                            subtitle: 'Gestión de personas y entidades',
+                            onTap: () =>
+                                Navigator.pushNamed(context, '/debtors'),
+                          ),
+                          _SettingItem(
+                            icon: Icons.category_outlined,
+                            title: 'Categorías',
+                            subtitle: 'Gestión de categorías de gastos',
+                            onTap: () {
+                              final authService = Provider.of<AuthService>(
+                                context,
+                                listen: false,
+                              );
+                              if (authService.currentUser != null) {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/debtor/categories',
+                                  arguments: authService.currentUser!.id,
+                                );
+                              }
                             },
                           ),
                         ],
