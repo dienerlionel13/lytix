@@ -75,21 +75,24 @@ class _SplashScreenState extends State<SplashScreen> {
                 Container(
                       width: 140,
                       height: 140,
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(36),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.5),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 50,
                             offset: const Offset(0, 20),
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.analytics_rounded,
-                        size: 70,
-                        color: Colors.white,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit:
+                            MainAxisAlignment.center == MainAxisAlignment.center
+                            ? BoxFit.contain
+                            : BoxFit.contain,
                       ),
                     )
                     .animate(onPlay: (controller) => controller.repeat())

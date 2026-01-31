@@ -118,22 +118,19 @@ class _LoginScreenState extends State<LoginScreen>
         Container(
           width: 100,
           height: 100,
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.analytics_rounded,
-            size: 50,
-            color: Colors.white,
-          ),
+          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
         ),
         const SizedBox(height: 24),
         Text(

@@ -110,22 +110,19 @@ class AboutScreen extends StatelessWidget {
         Container(
           width: 120,
           height: 120,
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 40,
                 offset: const Offset(0, 15),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.analytics_rounded,
-            size: 60,
-            color: Colors.white,
-          ),
+          child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
         ),
         const SizedBox(height: 24),
         Text(
