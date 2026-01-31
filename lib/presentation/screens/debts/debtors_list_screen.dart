@@ -277,7 +277,7 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
       color: AppColors.primary,
       backgroundColor: AppColors.surfaceDark,
       child: ListView.builder(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
         itemCount: _filteredDebtors.length,
         itemBuilder: (context, index) {
           final debtor = _filteredDebtors[index];

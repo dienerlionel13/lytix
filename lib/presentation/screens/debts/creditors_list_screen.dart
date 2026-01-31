@@ -196,7 +196,7 @@ class _CreditorsListScreenState extends State<CreditorsListScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       itemCount: _filteredCreditors.length,
       itemBuilder: (context, index) {
         final creditor = _filteredCreditors[index];

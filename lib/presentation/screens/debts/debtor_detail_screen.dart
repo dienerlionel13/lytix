@@ -64,7 +64,7 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
               _buildHeader(),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   child: Column(
                     children: [
                       _buildDebtorInfo(),

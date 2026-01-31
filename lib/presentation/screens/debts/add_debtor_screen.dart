@@ -166,7 +166,7 @@ class _AddDebtorScreenState extends State<AddDebtorScreen> {
                 _buildHeader(),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
                     child: Form(
                       key: _formKey,
                       onChanged: () => setState(() => _hasChanges = true),

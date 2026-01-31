@@ -161,7 +161,7 @@ class _ReceivableCategoriesScreenState
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
       itemCount: _categories.length,
       itemBuilder: (context, index) {
         final cat = _categories[index];

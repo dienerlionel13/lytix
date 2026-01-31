@@ -68,6 +68,12 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
       final categories = await receivableService.getCategories(
         widget.debtor.userId,
       );
+
+      // Ordenar alfabéticamente
+      categories.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+
       if (mounted) {
         setState(() {
           _categories = categories;
@@ -204,6 +210,34 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
     }
   }
 
+  String _getSelectedCategoryName() {
+    if (_selectedCategoryId == null) return '';
+    try {
+      return _categories
+          .firstWhere((cat) => cat.id == _selectedCategoryId)
+          .name;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  void _showCategoryPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CategoryPickerSheet(
+        categories: _categories,
+        initialSelectedId: _selectedCategoryId,
+        onSelected: (category) {
+          setState(() {
+            _selectedCategoryId = category.id;
+          });
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,7 +249,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
               _buildHeader(),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
                   child: _buildForm(),
                 ),
               ),
@@ -229,7 +263,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
           IconButton(
@@ -357,26 +391,31 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                         Expanded(
                           child: _isCategoriesLoading
                               ? const LinearProgressIndicator()
-                              : DropdownButtonFormField<String>(
-                                  value: _selectedCategoryId,
-                                  dropdownColor: AppColors.surfaceDark,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Categoría',
-                                    prefixIcon: Icon(Icons.category_outlined),
+                              : InkWell(
+                                  onTap: _showCategoryPicker,
+                                  child: AbsorbPointer(
+                                    child: TextFormField(
+                                      key: ValueKey(_selectedCategoryId),
+                                      initialValue: _getSelectedCategoryName(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Categoría',
+                                        prefixIcon: Icon(
+                                          Icons.category_outlined,
+                                        ),
+                                        suffixIcon: Icon(
+                                          Icons.keyboard_arrow_down,
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                      validator: (value) =>
+                                          _selectedCategoryId == null
+                                          ? 'Selecciona una categoría'
+                                          : null,
+                                    ),
                                   ),
-                                  items: _categories.map((cat) {
-                                    return DropdownMenuItem<String>(
-                                      value: cat.id,
-                                      child: Text(cat.name),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() => _selectedCategoryId = value);
-                                  },
-                                  validator: (value) => value == null
-                                      ? 'Selecciona una categoría'
-                                      : null,
                                 ),
                         ),
                         IconButton(
@@ -581,18 +620,21 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
 
   Widget _buildBottomAction() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        16,
+        24,
+        16 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: SafeArea(
-        child: GradientButton(
-          text: isEditing ? 'Actualizar Deuda' : 'Registrar Deuda',
-          onPressed: _isLoading ? null : _saveReceivable,
-          isLoading: _isLoading,
-          icon: Icons.save_outlined,
-        ),
+      child: GradientButton(
+        text: isEditing ? 'Actualizar Deuda' : 'Registrar Deuda',
+        onPressed: _isLoading ? null : _saveReceivable,
+        isLoading: _isLoading,
+        icon: Icons.save_outlined,
       ),
     );
   }
@@ -641,6 +683,179 @@ class _BalanceTypeCard extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryPickerSheet extends StatefulWidget {
+  final List<ReceivableCategory> categories;
+  final String? initialSelectedId;
+  final Function(ReceivableCategory) onSelected;
+
+  const _CategoryPickerSheet({
+    required this.categories,
+    this.initialSelectedId,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CategoryPickerSheet> createState() => _CategoryPickerSheetState();
+}
+
+class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
+  late List<ReceivableCategory> _filteredCategories;
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCategories = widget.categories;
+    _searchController.addListener(_filterCategories);
+  }
+
+  void _filterCategories() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredCategories = widget.categories
+          .where((cat) => cat.name.toLowerCase().contains(query))
+          .toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Seleccionar Categoría',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextFormField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Buscar categoría...',
+                  prefixIcon: Icon(Icons.search, color: AppColors.primary),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _filteredCategories.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No se encontraron categorías',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      itemCount: _filteredCategories.length,
+                      itemBuilder: (context, index) {
+                        final category = _filteredCategories[index];
+                        final isSelected =
+                            category.id == widget.initialSelectedId;
+                        return ListTile(
+                          onTap: () {
+                            widget.onSelected(category);
+                            Navigator.pop(context);
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.category_outlined,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            category.name,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.white,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primary,
+                                )
+                              : null,
+                        ).animate().fadeIn(delay: (index * 20).ms);
+                      },
+                    ),
             ),
           ],
         ),
