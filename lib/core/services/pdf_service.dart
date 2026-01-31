@@ -291,8 +291,42 @@ class PdfService {
 
       final pdf = pw.Document();
 
-      // Agrupar pagos por fecha
-      allPayments.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
+      // Preparar movimientos cronológicos
+      final movements = <_StatementMovement>[];
+      for (var r in receivables) {
+        movements.add(
+          _StatementMovement(
+            date: r.transactionDate ?? r.createdAt,
+            description: r.description,
+            notes: r.notes ?? '',
+            amount: r.initialAmount, // Los cargos aumentan el saldo
+            isPayment: false,
+          ),
+        );
+      }
+      for (var p in allPayments) {
+        final r = receivables.firstWhere(
+          (rec) => rec.id == p.receivableId,
+          orElse: () => receivables.first,
+        );
+        movements.add(
+          _StatementMovement(
+            date: p.paymentDate,
+            description: 'Abono: ${r.description}',
+            notes: p.notes ?? '',
+            amount: -p.amount, // Los abonos disminuyen el saldo
+            isPayment: true,
+          ),
+        );
+      }
+      movements.sort((a, b) => a.date.compareTo(b.date));
+
+      // Ordenar deudas para la tabla de detalle
+      receivables.sort(
+        (a, b) => (b.transactionDate ?? b.createdAt).compareTo(
+          a.transactionDate ?? a.createdAt,
+        ),
+      );
 
       pdf.addPage(
         pw.MultiPage(
@@ -308,6 +342,8 @@ class PdfService {
               (sum, r) => sum + r.paidAmount,
             );
             final totalPending = totalInitial - totalPaid;
+
+            double runningBalance = 0;
 
             return [
               // Encabezado
@@ -349,8 +385,8 @@ class PdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text(
-                        'Fecha: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
-                        style: const pw.TextStyle(fontSize: 10),
+                        'Generado: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+                        style: const pw.TextStyle(fontSize: 9),
                       ),
                       pw.Text(
                         'ID Deudor: ${debtor.id.substring(0, 8).toUpperCase()}',
@@ -420,11 +456,9 @@ class PdfService {
                   ],
                 ),
               ),
-              pw.SizedBox(height: 25),
-
-              // Tabla de Deudas Activas
+              // TABLA 1: RESUMEN DE DEUDAS (Simplificada)
               pw.Text(
-                'DETALLE DE DEUDAS',
+                'RESUMEN DE DEUDAS PENDIENTES',
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 12,
@@ -437,23 +471,19 @@ class PdfService {
                   color: PdfColors.grey200,
                   width: 0.5,
                 ),
+                columnWidths: {
+                  0: const pw.FixedColumnWidth(70), // F. Trans
+                  1: const pw.FlexColumnWidth(3), // Descripción
+                  2: const pw.FixedColumnWidth(80), // Saldo
+                },
                 children: [
                   pw.TableRow(
                     decoration: const pw.BoxDecoration(
                       color: PdfColors.grey100,
                     ),
                     children: [
+                      _buildCell('F. Trans.', isHeader: true),
                       _buildCell('Descripción', isHeader: true),
-                      _buildCell(
-                        'Monto Inicial',
-                        isHeader: true,
-                        align: pw.TextAlign.right,
-                      ),
-                      _buildCell(
-                        'Pagado',
-                        isHeader: true,
-                        align: pw.TextAlign.right,
-                      ),
                       _buildCell(
                         'Saldo',
                         isHeader: true,
@@ -464,15 +494,14 @@ class PdfService {
                   ...receivables.map(
                     (r) => pw.TableRow(
                       children: [
+                        _buildCell(
+                          r.transactionDate != null
+                              ? DateFormat(
+                                  'dd/MM/yy',
+                                ).format(r.transactionDate!)
+                              : (DateFormat('dd/MM/yy').format(r.createdAt)),
+                        ),
                         _buildCell(r.description),
-                        _buildCell(
-                          _currencyFormat.format(r.initialAmount),
-                          align: pw.TextAlign.right,
-                        ),
-                        _buildCell(
-                          _currencyFormat.format(r.paidAmount),
-                          align: pw.TextAlign.right,
-                        ),
                         _buildCell(
                           _currencyFormat.format(r.pendingAmount),
                           align: pw.TextAlign.right,
@@ -483,6 +512,77 @@ class PdfService {
                       ],
                     ),
                   ),
+                ],
+              ),
+              pw.SizedBox(height: 30),
+
+              // TABLA 2: MOVIMIENTOS DETALLADOS (Con Notas)
+              pw.Text(
+                'HISTORIAL DE MOVIMIENTOS Y ABONOS',
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 12,
+                  color: PdfColors.blue900,
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Table(
+                border: pw.TableBorder.all(
+                  color: PdfColors.grey200,
+                  width: 0.5,
+                ),
+                columnWidths: {
+                  0: const pw.FixedColumnWidth(60), // Fecha
+                  1: const pw.FlexColumnWidth(1.5), // Descripción
+                  2: const pw.FlexColumnWidth(2), // Notas
+                  3: const pw.FixedColumnWidth(70), // Monto
+                  4: const pw.FixedColumnWidth(70), // Saldo
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(
+                      color: PdfColors.grey100,
+                    ),
+                    children: [
+                      _buildCell('Fecha', isHeader: true),
+                      _buildCell('Descripción', isHeader: true),
+                      _buildCell('Notas', isHeader: true),
+                      _buildCell(
+                        'Monto',
+                        isHeader: true,
+                        align: pw.TextAlign.right,
+                      ),
+                      _buildCell(
+                        'Saldo Acum.',
+                        isHeader: true,
+                        align: pw.TextAlign.right,
+                      ),
+                    ],
+                  ),
+                  ...movements.map((move) {
+                    runningBalance += move.amount;
+                    return pw.TableRow(
+                      children: [
+                        _buildCell(DateFormat('dd/MM/yy').format(move.date)),
+                        _buildCell(move.description),
+                        _buildCell(move.notes, align: pw.TextAlign.left),
+                        _buildCell(
+                          _currencyFormat.format(move.amount.abs()),
+                          align: pw.TextAlign.right,
+                          color: move.isPayment
+                              ? PdfColors.green700
+                              : PdfColors.red700,
+                        ),
+                        _buildCell(
+                          _currencyFormat.format(runningBalance),
+                          align: pw.TextAlign.right,
+                          color: runningBalance > 0
+                              ? PdfColors.red700
+                              : PdfColors.green700,
+                        ),
+                      ],
+                    );
+                  }),
                 ],
               ),
               pw.SizedBox(height: 25),
@@ -545,7 +645,7 @@ class PdfService {
               pw.Divider(color: PdfColors.grey400),
               pw.Center(
                 child: pw.Text(
-                  'Documento informativo de carácter personal.',
+                  'Documento informativo de carácter personal generado por Lytix.',
                   style: const pw.TextStyle(
                     fontSize: 8,
                     color: PdfColors.grey700,
@@ -623,4 +723,20 @@ class PdfService {
       ),
     );
   }
+}
+
+class _StatementMovement {
+  final DateTime date;
+  final String description;
+  final String notes;
+  final double amount;
+  final bool isPayment;
+
+  _StatementMovement({
+    required this.date,
+    required this.description,
+    required this.notes,
+    required this.amount,
+    required this.isPayment,
+  });
 }
