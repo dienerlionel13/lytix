@@ -320,7 +320,10 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
                   'Generar recibo PDF',
                   style: TextStyle(color: Colors.white),
                 ),
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.pop(context);
+                  _generateFullReport();
+                },
               ),
             ],
           ),
@@ -350,6 +353,37 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
 
     if (result == true) {
       _loadReceivables();
+    }
+  }
+
+  Future<void> _generateFullReport() async {
+    setState(() => _isLoading = true);
+    try {
+      final recService = Provider.of<ReceivableService>(context, listen: false);
+
+      // Obtener todos los pagos de todas las deudas del deudor
+      final List<ReceivablePayment> allPayments = [];
+      for (var receivable in _receivables) {
+        final payments = await recService.getPayments(receivable.id);
+        allPayments.addAll(payments);
+      }
+
+      await PdfService.generateDebtorStatement(
+        debtor: widget.debtor,
+        receivables: _receivables,
+        allPayments: allPayments,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar reporte: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
