@@ -173,7 +173,6 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
-        dateCreated: widget.receivable?.dateCreated ?? DateTime.now(),
         status: widget.receivable?.status ?? ReceivableStatus.pending,
         paidAmount: widget.receivable?.paidAmount ?? 0,
       );
@@ -457,7 +456,7 @@ class _AddReceivableScreenState extends State<AddReceivableScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'Fecha de pertenencia (Opcional)',
+                                    'Fecha del gasto (Opcional)',
                                     style: TextStyle(
                                       color: Colors.white54,
                                       fontSize: 12,

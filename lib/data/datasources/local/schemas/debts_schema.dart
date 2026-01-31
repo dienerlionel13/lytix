@@ -43,7 +43,6 @@ class DebtsSchema {
       initial_amount REAL NOT NULL,
       currency TEXT NOT NULL DEFAULT 'GTQ',
       exchange_rate REAL DEFAULT 1.0,
-      date_created TEXT NOT NULL,
       due_date TEXT,
       status TEXT NOT NULL DEFAULT 'PENDING',
       notes TEXT,
@@ -54,6 +53,7 @@ class DebtsSchema {
       category_id TEXT,
       debtor_name TEXT,
       balance_type TEXT,
+      transaction_date TEXT,
       FOREIGN KEY (debtor_id) REFERENCES debtors(id) ON DELETE CASCADE,
       FOREIGN KEY (category_id) REFERENCES receivable_categories(id) ON DELETE SET NULL
     )
@@ -105,7 +105,6 @@ class DebtsSchema {
       currency TEXT NOT NULL DEFAULT 'GTQ',
       exchange_rate REAL DEFAULT 1.0,
       interest_rate REAL DEFAULT 0,
-      date_created TEXT NOT NULL,
       due_date TEXT,
       reminder_enabled INTEGER DEFAULT 1,
       reminder_days_before INTEGER DEFAULT 3,

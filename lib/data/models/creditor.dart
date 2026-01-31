@@ -124,7 +124,6 @@ class Payable {
   final String currency;
   final double exchangeRate;
   final double interestRate;
-  final DateTime dateCreated;
   final DateTime? dueDate;
   final bool reminderEnabled;
   final int reminderDaysBefore;
@@ -145,7 +144,6 @@ class Payable {
     this.currency = 'GTQ',
     this.exchangeRate = 1.0,
     this.interestRate = 0,
-    required this.dateCreated,
     this.dueDate,
     this.reminderEnabled = true,
     this.reminderDaysBefore = 3,
@@ -205,7 +203,6 @@ class Payable {
       'currency': currency,
       'exchange_rate': exchangeRate,
       'interest_rate': interestRate,
-      'date_created': dateCreated.toIso8601String(),
       'due_date': dueDate?.toIso8601String(),
       'reminder_enabled': reminderEnabled ? 1 : 0,
       'reminder_days_before': reminderDaysBefore,
@@ -226,7 +223,6 @@ class Payable {
       currency: map['currency'] as String? ?? 'GTQ',
       exchangeRate: (map['exchange_rate'] as num?)?.toDouble() ?? 1.0,
       interestRate: (map['interest_rate'] as num?)?.toDouble() ?? 0,
-      dateCreated: DateTime.parse(map['date_created'] as String),
       dueDate: map['due_date'] != null
           ? DateTime.parse(map['due_date'] as String)
           : null,
@@ -253,7 +249,6 @@ class Payable {
     String? currency,
     double? exchangeRate,
     double? interestRate,
-    DateTime? dateCreated,
     DateTime? dueDate,
     bool? reminderEnabled,
     int? reminderDaysBefore,
@@ -272,7 +267,6 @@ class Payable {
       currency: currency ?? this.currency,
       exchangeRate: exchangeRate ?? this.exchangeRate,
       interestRate: interestRate ?? this.interestRate,
-      dateCreated: dateCreated ?? this.dateCreated,
       dueDate: dueDate ?? this.dueDate,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,

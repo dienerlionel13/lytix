@@ -20,7 +20,6 @@ class ReceivableService extends ChangeNotifier {
         'initial_amount': receivable.initialAmount,
         'currency': receivable.currency,
         'exchange_rate': receivable.exchangeRate,
-        'date_created': receivable.dateCreated.toIso8601String(),
         'due_date': receivable.dueDate?.toIso8601String(),
         'status': receivable.status.name.toUpperCase(),
         'notes': receivable.notes,
@@ -28,6 +27,7 @@ class ReceivableService extends ChangeNotifier {
         'category_id': receivable.categoryId,
         'debtor_name': receivable.debtorName,
         'balance_type': receivable.balanceType,
+        'transaction_date': receivable.transactionDate?.toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
 
@@ -53,7 +53,7 @@ class ReceivableService extends ChangeNotifier {
           .from('receivables')
           .select()
           .eq('debtor_id', debtorId)
-          .order('date_created', ascending: false);
+          .order('created_at', ascending: false);
 
       final receivables = response.map((m) => Receivable.fromMap(m)).toList();
 
@@ -72,7 +72,7 @@ class ReceivableService extends ChangeNotifier {
         DbConstants.tableReceivables,
         where: 'debtor_id = ?',
         whereArgs: [debtorId],
-        orderBy: 'date_created DESC',
+        orderBy: 'created_at DESC',
       );
       return maps.map((m) => Receivable.fromMap(m)).toList();
     }

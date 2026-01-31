@@ -123,7 +123,6 @@ class Receivable {
   final double initialAmount;
   final String currency;
   final double exchangeRate;
-  final DateTime dateCreated;
   final DateTime? dueDate;
   final ReceivableStatus status;
   final String? notes;
@@ -145,7 +144,6 @@ class Receivable {
     required this.initialAmount,
     this.currency = 'GTQ',
     this.exchangeRate = 1.0,
-    required this.dateCreated,
     this.dueDate,
     this.status = ReceivableStatus.pending,
     this.notes,
@@ -204,7 +202,6 @@ class Receivable {
       'initial_amount': initialAmount,
       'currency': currency,
       'exchange_rate': exchangeRate,
-      'date_created': dateCreated.toIso8601String(),
       'due_date': dueDate?.toIso8601String(),
       'status': status.name.toUpperCase(),
       'notes': notes,
@@ -227,7 +224,6 @@ class Receivable {
       initialAmount: (map['initial_amount'] as num).toDouble(),
       currency: map['currency'] as String? ?? 'GTQ',
       exchangeRate: (map['exchange_rate'] as num?)?.toDouble() ?? 1.0,
-      dateCreated: DateTime.parse(map['date_created'] as String),
       dueDate: map['due_date'] != null
           ? DateTime.parse(map['due_date'] as String)
           : null,
@@ -258,7 +254,6 @@ class Receivable {
     double? initialAmount,
     String? currency,
     double? exchangeRate,
-    DateTime? dateCreated,
     DateTime? dueDate,
     ReceivableStatus? status,
     String? notes,
@@ -279,7 +274,6 @@ class Receivable {
       initialAmount: initialAmount ?? this.initialAmount,
       currency: currency ?? this.currency,
       exchangeRate: exchangeRate ?? this.exchangeRate,
-      dateCreated: dateCreated ?? this.dateCreated,
       dueDate: dueDate ?? this.dueDate,
       status: status ?? this.status,
       notes: notes ?? this.notes,
@@ -300,7 +294,7 @@ class Receivable {
       'Receivable{id: $id, description: $description, pending: $formattedPendingAmount}';
 }
 
-/// ReceivablePayment Model
+/// Receivable Payment Model
 class ReceivablePayment {
   final String id;
   final String receivableId;
@@ -311,8 +305,6 @@ class ReceivablePayment {
   final String? paymentMethod;
   final String? notes;
   final String? receiptNumber;
-  final DateTime createdAt;
-  final DateTime? syncedAt;
 
   ReceivablePayment({
     String? id,
@@ -324,14 +316,7 @@ class ReceivablePayment {
     this.paymentMethod,
     this.notes,
     this.receiptNumber,
-    DateTime? createdAt,
-    this.syncedAt,
-  }) : id = id ?? const Uuid().v4(),
-       createdAt = createdAt ?? DateTime.now();
-
-  String get currencySymbol => currency == 'USD' ? '\$' : 'Q';
-
-  String get formattedAmount => '$currencySymbol ${amount.toStringAsFixed(2)}';
+  }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
@@ -344,8 +329,6 @@ class ReceivablePayment {
       'payment_method': paymentMethod,
       'notes': notes,
       'receipt_number': receiptNumber,
-      'created_at': createdAt.toIso8601String(),
-      'synced_at': syncedAt?.toIso8601String(),
     };
   }
 
@@ -360,10 +343,6 @@ class ReceivablePayment {
       paymentMethod: map['payment_method'] as String?,
       notes: map['notes'] as String?,
       receiptNumber: map['receipt_number'] as String?,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      syncedAt: map['synced_at'] != null
-          ? DateTime.parse(map['synced_at'] as String)
-          : null,
     );
   }
 }
@@ -373,27 +352,12 @@ class ReceivableCategory {
   final String id;
   final String userId;
   final String name;
-  final DateTime createdAt;
-  final DateTime updatedAt;
 
-  ReceivableCategory({
-    String? id,
-    required this.userId,
-    required this.name,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) : id = id ?? const Uuid().v4(),
-       createdAt = createdAt ?? DateTime.now(),
-       updatedAt = updatedAt ?? DateTime.now();
+  ReceivableCategory({String? id, required this.userId, required this.name})
+    : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'user_id': userId,
-      'name': name,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
+    return {'id': id, 'user_id': userId, 'name': name};
   }
 
   factory ReceivableCategory.fromMap(Map<String, dynamic> map) {
@@ -401,8 +365,6 @@ class ReceivableCategory {
       id: map['id'] as String,
       userId: map['user_id'] as String,
       name: map['name'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 }

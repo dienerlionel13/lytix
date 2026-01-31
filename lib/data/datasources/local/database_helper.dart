@@ -105,7 +105,6 @@ class DatabaseHelper {
               // Asegurar tabla de categorías
               await db.execute(DebtsSchema.createTableReceivableCategories);
 
-              // Intentar agregar cada columna individualmente para evitar fallos si alguna ya existe
               final columns = [
                 'category_id TEXT',
                 'debtor_name TEXT',
@@ -118,12 +117,58 @@ class DatabaseHelper {
                   await db.execute(
                     'ALTER TABLE receivables ADD COLUMN $column',
                   );
-                } catch (_) {
-                  // Ignorar si la columna ya existe
-                }
+                } catch (_) {}
               }
             } catch (e) {
               debugPrint('Error en migración de deudas (v4): $e');
+            }
+          }
+        }
+
+        if (oldVersion < 5) {
+          if (path.contains(DbConstants.debtsDatabase)) {
+            try {
+              // Migración de receivables para eliminar date_created
+              await db.execute(
+                'ALTER TABLE receivables RENAME TO temp_receivables',
+              );
+              await db.execute(DebtsSchema.createTableReceivables);
+              await db.execute('''
+                INSERT INTO receivables (
+                  id, debtor_id, description, initial_amount, currency, 
+                  exchange_rate, due_date, status, notes, created_at, 
+                  updated_at, synced_at, purchase_id, category_id, 
+                  debtor_name, balance_type, transaction_date
+                )
+                SELECT 
+                  id, debtor_id, description, initial_amount, currency, 
+                  exchange_rate, due_date, status, notes, created_at, 
+                  updated_at, synced_at, purchase_id, category_id, 
+                  debtor_name, balance_type, transaction_date
+                FROM temp_receivables
+              ''');
+              await db.execute('DROP TABLE temp_receivables');
+
+              // Migración de payables para eliminar date_created
+              await db.execute('ALTER TABLE payables RENAME TO temp_payables');
+              await db.execute(DebtsSchema.createTablePayables);
+              await db.execute('''
+                INSERT INTO payables (
+                  id, creditor_id, description, initial_amount, currency, 
+                  exchange_rate, interest_rate, due_date, reminder_enabled, 
+                  reminder_days_before, status, notes, created_at, 
+                  updated_at, synced_at
+                )
+                SELECT 
+                  id, creditor_id, description, initial_amount, currency, 
+                  exchange_rate, interest_rate, due_date, reminder_enabled, 
+                  reminder_days_before, status, notes, created_at, 
+                  updated_at, synced_at
+                FROM temp_payables
+              ''');
+              await db.execute('DROP TABLE temp_payables');
+            } catch (e) {
+              debugPrint('Error en migración de deudas (v5): $e');
             }
           }
         }

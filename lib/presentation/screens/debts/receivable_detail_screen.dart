@@ -243,7 +243,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
           _buildInfoRow(
             Icons.calendar_today,
             'Fecha de Registro',
-            dateFormat.format(widget.receivable.dateCreated),
+            dateFormat.format(widget.receivable.createdAt),
           ),
           const Divider(height: 24, color: Colors.white10),
           _buildInfoRow(

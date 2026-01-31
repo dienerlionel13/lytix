@@ -35,7 +35,7 @@ class PurchaseService {
             initialAmount: split.amount,
             currency: purchase.currency,
             exchangeRate: purchase.exchangeRate,
-            dateCreated: purchase.purchaseDate,
+            transactionDate: purchase.purchaseDate,
             purchaseId: purchase.id,
           );
 
