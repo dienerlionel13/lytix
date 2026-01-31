@@ -157,13 +157,34 @@ class ReceivableService extends ChangeNotifier {
 
       // 2. Guardar el pago en SQLite local
       await _dbHelper.debtsDb.insert(
-        'receivable_payments', // Asumiendo que este es el nombre en las constantes o esquema
+        DbConstants.tableReceivablePayments,
         payment.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      // 3. La actualización de la deuda (paid_amount) usualmente se maneja vía trigger en bd
-      // o calculando sum(payments). Aquí lo haremos explícito para SQL local.
+      // 3. Actualizar el paid_amount de la deuda en local
+      // Obtenemos todos los pagos para esta deuda
+      final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
+        DbConstants.tableReceivablePayments,
+        where: 'receivable_id = ?',
+        whereArgs: [payment.receivableId],
+      );
+
+      double totalPaid = 0;
+      for (var m in maps) {
+        totalPaid += (m['amount'] as num).toDouble();
+      }
+
+      // Actualizar la tabla de deudas
+      await _dbHelper.debtsDb.update(
+        DbConstants.tableReceivables,
+        {
+          'paid_amount': totalPaid,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [payment.receivableId],
+      );
 
       notifyListeners();
     } catch (e) {

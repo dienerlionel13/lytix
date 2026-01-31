@@ -5,6 +5,7 @@ import '../../../data/models/debtor.dart';
 import '../../widgets/common/glass_card.dart';
 import '../../../core/services/receivable_service.dart';
 import 'package:provider/provider.dart';
+import '../../../core/services/pdf_service.dart';
 
 class DebtorDetailScreen extends StatefulWidget {
   final Debtor debtor;
@@ -353,7 +354,167 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
   }
 
   void _addPayment(Receivable receivable) {
-    // Todo: Show add payment dialog
+    final amountController = TextEditingController(
+      text: receivable.pendingAmount.abs() > 0
+          ? receivable.pendingAmount.abs().toStringAsFixed(2)
+          : '',
+    );
+    final notesController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Registrar Abono',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Deuda: ${receivable.description}',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Monto del abono (Q)',
+                prefixIcon: Icon(Icons.money, color: AppColors.primary),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Notas (Opcional)',
+                prefixIcon: Icon(Icons.note_outlined, color: Colors.white54),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () async {
+              final amountStr = amountController.text.trim();
+              if (amountStr.isEmpty) return;
+
+              final amount = double.tryParse(amountStr);
+              if (amount == null || amount <= 0) return;
+
+              Navigator.pop(context); // Cerrar diólogo
+
+              _saveAbono(receivable, amount, notesController.text.trim());
+            },
+            child: const Text(
+              'Guardar Abono',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveAbono(
+    Receivable receivable,
+    double amount,
+    String notes,
+  ) async {
+    setState(() => _isLoading = true);
+    try {
+      final recService = Provider.of<ReceivableService>(context, listen: false);
+
+      final payment = ReceivablePayment(
+        receivableId: receivable.id,
+        amount: amount,
+        paymentDate: DateTime.now(),
+        notes: notes,
+        paymentMethod: 'Efectivo',
+      );
+
+      await recService.savePayment(payment);
+
+      // Recargar datos
+      await _loadReceivables();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Abono registrado con éxito'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+
+        // Preguntar si quiere compartir el recibo
+        _showShareDialog(payment, receivable);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar abono: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showShareDialog(ReceivablePayment payment, Receivable receivable) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: const Text(
+          '¿Compartir Recibo?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          '¿Deseas generar y enviar un comprobante de pago en PDF al deudor?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Ahora no'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              PdfService.generateAndShareReceipt(
+                debtor: widget.debtor,
+                receivable: receivable,
+                payment: payment,
+              );
+            },
+            child: const Text(
+              'Sí, compartir',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
