@@ -296,73 +296,34 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.white70),
-              title: const Text(
-                'Historial de pagos',
-                style: TextStyle(color: Colors.white),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.history, color: Colors.white70),
+                title: const Text(
+                  'Historial de pagos',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () => Navigator.pop(context),
               ),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf, color: Colors.white70),
-              title: const Text(
-                'Generar recibo PDF',
-                style: TextStyle(color: Colors.white),
+              ListTile(
+                leading: const Icon(
+                  Icons.picture_as_pdf,
+                  color: Colors.white70,
+                ),
+                title: const Text(
+                  'Generar recibo PDF',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () => Navigator.pop(context),
               ),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text(
-                'Eliminar deudor',
-                style: TextStyle(color: AppColors.error),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDelete();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _confirmDelete() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surfaceDark,
-        title: const Text(
-          '¿Eliminar deudor?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Esta acción eliminará al deudor y todas sus deudas asociadas.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context, 'deleted');
-            },
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
