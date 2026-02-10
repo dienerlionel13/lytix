@@ -400,7 +400,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
                         ],
                       ),
                     ),
-                    if (payment.paymentMethod != null)
+                    if (payment.paymentMethod != null) ...[
                       Text(
                         payment.paymentMethod!,
                         style: TextStyle(
@@ -409,6 +409,17 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      const SizedBox(width: 8),
+                    ],
+                    IconButton(
+                      onPressed: () => _confirmDeletePayment(context, payment),
+                      icon: Icon(
+                        Icons.delete_sweep_outlined,
+                        color: AppColors.error.withValues(alpha: 0.7),
+                        size: 20,
+                      ),
+                      tooltip: 'Eliminar abono',
+                    ),
                   ],
                 ),
               ),
@@ -483,6 +494,63 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
                 if (context.mounted) {
                   Navigator.pop(context); // Close dialog
                   Navigator.pop(context, true); // Go back to list
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeletePayment(BuildContext context, ReceivablePayment payment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: const Text(
+          '¿Eliminar este abono?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Se eliminará el abono de ${Formatters.currency(payment.amount)}. El saldo de la deuda se actualizará automáticamente.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final service = Provider.of<ReceivableService>(
+                context,
+                listen: false,
+              );
+              try {
+                await service.deletePayment(payment.id, widget.receivable.id);
+                if (context.mounted) {
+                  Navigator.pop(context); // Close dialog
+                  _loadPayments(); // Reload payments list
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Abono eliminado correctamente'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
                 }
               } catch (e) {
                 if (context.mounted) {

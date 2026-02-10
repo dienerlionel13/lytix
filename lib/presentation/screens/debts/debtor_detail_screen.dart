@@ -64,18 +64,10 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
       .where((r) => r.initialAmount < 0)
       .fold(0.0, (sum, r) => sum + r.pendingAmount.abs());
 
-  // Balance General: (Suma de montos iniciales netos) - (Suma de abonos totales)
-  // Esto asegura que si tú pagas o te pagan, el balance disminuye (menos saldo pendiente).
+  // Balance General: Suma directa de saldos pendientes firmados.
+  // PC: Positivo, PP: Negativo. Al estar todo pagado, Sum = 0.
   double get _netBalance {
-    final double initialNet = _receivables.fold(
-      0.0,
-      (sum, r) => sum + r.initialAmount,
-    );
-    final double totalPayments = _receivables.fold(
-      0.0,
-      (sum, r) => sum + r.paidAmount,
-    );
-    return initialNet - totalPayments;
+    return _receivables.fold(0.0, (sum, r) => sum + r.pendingAmount);
   }
 
   @override
@@ -88,16 +80,23 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
             children: [
               _buildHeader(),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                  child: Column(
-                    children: [
-                      _buildDebtorInfo(),
-                      const SizedBox(height: 20),
-                      _buildSummaryCards(),
-                      const SizedBox(height: 20),
-                      _buildReceivablesList(),
-                    ],
+                child: RefreshIndicator(
+                  onRefresh: _loadReceivables,
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.surfaceDark,
+                  child: SingleChildScrollView(
+                    physics:
+                        const AlwaysScrollableScrollPhysics(), // Importante para que funcione el pull
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                    child: Column(
+                      children: [
+                        _buildDebtorInfo(),
+                        const SizedBox(height: 20),
+                        _buildSummaryCards(),
+                        const SizedBox(height: 20),
+                        _buildReceivablesList(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -727,19 +726,20 @@ class _ReceivableCard extends StatelessWidget {
             const SizedBox(height: 12),
 
             // Actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  onPressed: onAddPayment,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Agregar pago'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
+            if (!receivable.isPaid)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: onAddPayment,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Agregar pago'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),

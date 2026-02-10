@@ -48,7 +48,6 @@ class ReceivableService extends ChangeNotifier {
   /// Obtiene todas las deudas de un deudor específico
   Future<List<Receivable>> getReceivables(String debtorId) async {
     try {
-      // Optimizamos cargando las deudas y sus pagos en una sola consulta
       final List<dynamic> response = await _supabase
           .schema('lytix')
           .from('receivables')
@@ -58,28 +57,37 @@ class ReceivableService extends ChangeNotifier {
 
       final List<Receivable> receivables = [];
 
-      for (var m in response) {
-        final receivable = Receivable.fromMap(m);
-        // Sumar todos los pagos para calcular el total pagado
-        final payments = m['receivable_payments'] as List<dynamic>? ?? [];
-        double totalPaid = 0;
-        for (var p in payments) {
-          totalPaid += (p['amount'] as num).toDouble();
-        }
-        receivable.paidAmount = totalPaid;
-        receivables.add(receivable);
+      // Usar una transacción para insertar todo de una vez y mejorar velocidad
+      await _dbHelper.debtsDb.transaction((txn) async {
+        for (var m in response) {
+          final receivable = Receivable.fromMap(m);
+          final payments = m['receivable_payments'] as List<dynamic>? ?? [];
 
-        // Actualizamos caché local
-        await _dbHelper.debtsDb.insert(
-          DbConstants.tableReceivables,
-          receivable.toMap(),
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
+          double totalPaidSigned = 0;
+          for (var p in payments) {
+            final amount = (p['amount'] as num).toDouble();
+            // Si la deuda es "Por Cobrar" (Positiva), el abono resta balance (-)
+            // Si la deuda es "Por Pagar" (Negativa), el abono suma balance (+)
+            if (receivable.initialAmount >= 0) {
+              totalPaidSigned -= amount;
+            } else {
+              totalPaidSigned += amount;
+            }
+          }
+          receivable.paidAmount = totalPaidSigned;
+          receivables.add(receivable);
+
+          await txn.insert(
+            DbConstants.tableReceivables,
+            receivable.toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      });
 
       return receivables;
     } catch (e) {
-      debugPrint('Error obteniendo deudas de Supabase, usando local: $e');
+      debugPrint('Error obteniendo deudas, usando local: $e');
       final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
         DbConstants.tableReceivables,
         where: 'debtor_id = ?',
@@ -105,11 +113,16 @@ class ReceivableService extends ChangeNotifier {
       for (var m in response) {
         final receivable = Receivable.fromMap(m);
         final payments = m['receivable_payments'] as List<dynamic>? ?? [];
-        double totalPaid = 0;
+        double totalPaidSigned = 0;
         for (var p in payments) {
-          totalPaid += (p['amount'] as num).toDouble();
+          final amount = (p['amount'] as num).toDouble();
+          if (receivable.initialAmount >= 0) {
+            totalPaidSigned -= amount;
+          } else {
+            totalPaidSigned += amount;
+          }
         }
-        receivable.paidAmount = totalPaid;
+        receivable.paidAmount = totalPaidSigned;
         receivables.add(receivable);
       }
 
@@ -186,24 +199,37 @@ class ReceivableService extends ChangeNotifier {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      // 3. Actualizar el paid_amount de la deuda en local
-      // Obtenemos todos los pagos para esta deuda
+      // 3. Recalcular el paid_amount firmado
+      // Obtenemos el monto inicial de la deuda para saber el signo
+      final debtMap = await _dbHelper.debtsDb.query(
+        DbConstants.tableReceivables,
+        where: 'id = ?',
+        whereArgs: [payment.receivableId],
+      );
+      final double initialAmount = (debtMap.first['initial_amount'] as num)
+          .toDouble();
+
       final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
         DbConstants.tableReceivablePayments,
         where: 'receivable_id = ?',
         whereArgs: [payment.receivableId],
       );
 
-      double totalPaid = 0;
+      double totalPaidSigned = 0;
       for (var m in maps) {
-        totalPaid += (m['amount'] as num).toDouble();
+        final amount = (m['amount'] as num).toDouble();
+        if (initialAmount >= 0) {
+          totalPaidSigned -= amount;
+        } else {
+          totalPaidSigned += amount;
+        }
       }
 
       // Actualizar la tabla de deudas
       await _dbHelper.debtsDb.update(
         DbConstants.tableReceivables,
         {
-          'paid_amount': totalPaid,
+          'paid_amount': totalPaidSigned,
           'updated_at': DateTime.now().toIso8601String(),
         },
         where: 'id = ?',
@@ -279,6 +305,65 @@ class ReceivableService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Error al eliminar categoría: $e');
+      rethrow;
+    }
+  }
+
+  /// Elimina un abono (pago) y actualiza el saldo de la deuda
+  Future<void> deletePayment(String paymentId, String receivableId) async {
+    try {
+      // 1. Eliminar de Supabase
+      await _supabase
+          .schema('lytix')
+          .from('receivable_payments')
+          .delete()
+          .eq('id', paymentId);
+
+      // 2. Eliminar de SQLite
+      await _dbHelper.debtsDb.delete(
+        DbConstants.tableReceivablePayments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+
+      // 3. Recalcular y actualizar el paid_amount en local (firmado)
+      final debtMap = await _dbHelper.debtsDb.query(
+        DbConstants.tableReceivables,
+        where: 'id = ?',
+        whereArgs: [receivableId],
+      );
+      final double initialAmount = (debtMap.first['initial_amount'] as num)
+          .toDouble();
+
+      final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.query(
+        DbConstants.tableReceivablePayments,
+        where: 'receivable_id = ?',
+        whereArgs: [receivableId],
+      );
+
+      double totalPaidSigned = 0;
+      for (var m in maps) {
+        final amount = (m['amount'] as num).toDouble();
+        if (initialAmount >= 0) {
+          totalPaidSigned -= amount;
+        } else {
+          totalPaidSigned += amount;
+        }
+      }
+
+      await _dbHelper.debtsDb.update(
+        DbConstants.tableReceivables,
+        {
+          'paid_amount': totalPaidSigned,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [receivableId],
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al eliminar abono: $e');
       rethrow;
     }
   }

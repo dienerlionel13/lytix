@@ -74,22 +74,13 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
   }
 
   double get _globalBalance {
-    final double initialNet = _allReceivables.fold(
-      0.0,
-      (sum, r) => sum + r.initialAmount,
-    );
-    final double totalPayments = _allReceivables.fold(
-      0.0,
-      (sum, r) => sum + r.paidAmount,
-    );
-    return initialNet - totalPayments;
+    return _allReceivables.fold(0.0, (sum, r) => sum + r.pendingAmount);
   }
 
   double _getDebtorBalance(String debtorId) {
-    final debtorRecs = _allReceivables.where((r) => r.debtorId == debtorId);
-    final initialNet = debtorRecs.fold(0.0, (sum, r) => sum + r.initialAmount);
-    final totalPayments = debtorRecs.fold(0.0, (sum, r) => sum + r.paidAmount);
-    return initialNet - totalPayments;
+    return _allReceivables
+        .where((r) => r.debtorId == debtorId)
+        .fold(0.0, (sum, r) => sum + r.pendingAmount);
   }
 
   int _getDebtorDebtCount(String debtorId) {

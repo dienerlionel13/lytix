@@ -165,19 +165,15 @@ class Receivable {
   /// Amount that has been paid - can be modified externally
   double paidAmount;
 
-  double get pendingAmount {
-    if (initialAmount >= 0) {
-      return initialAmount - paidAmount;
-    } else {
-      // Para deudas negativas (yo debo), el abono disminuye la magnitud de la deuda.
-      // Ejem: -100 + 10 = -90 de deuda.
-      return initialAmount + paidAmount;
-    }
-  }
+  /// El monto pendiente es la suma algebraica de lo inicial más lo pagado.
+  /// Cobrar: Initial (+) 100 + Paid (-) 10 = 90 pendiente.
+  /// Pagar: Initial (-) 100 + Paid (+) 10 = -90 pendiente.
+  double get pendingAmount => initialAmount + paidAmount;
 
   double get progressPercentage {
     if (initialAmount == 0) return 0.0;
-    return (paidAmount / initialAmount.abs()).clamp(0.0, 1.0);
+    // El progreso se basa en cuánto se ha reducido la magnitud del monto inicial
+    return (paidAmount.abs() / initialAmount.abs()).clamp(0.0, 1.0);
   }
 
   bool get isPaid {

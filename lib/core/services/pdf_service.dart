@@ -337,15 +337,21 @@ class PdfService {
           pageFormat: PdfPageFormat.letter,
           margin: const pw.EdgeInsets.all(40),
           build: (pw.Context context) {
-            final totalInitial = receivables.fold<double>(
-              0,
-              (sum, r) => sum + r.initialAmount,
+            // Cálculos con la nueva lógica contable
+            final totalCobrar = receivables
+                .where((r) => r.initialAmount > 0)
+                .fold(0.0, (sum, r) => sum + r.initialAmount);
+            final totalPagar = receivables
+                .where((r) => r.initialAmount < 0)
+                .fold(0.0, (sum, r) => sum + r.initialAmount.abs());
+            final totalAbonos = allPayments.fold(
+              0.0,
+              (sum, p) => sum + p.amount,
             );
-            final totalPaid = receivables.fold<double>(
-              0,
-              (sum, r) => sum + r.paidAmount,
+            final saldoNeto = receivables.fold(
+              0.0,
+              (sum, r) => sum + r.pendingAmount,
             );
-            final totalPending = totalInitial - totalPaid;
 
             double runningBalance = 0;
 
@@ -430,7 +436,7 @@ class PdfService {
                 ),
               pw.SizedBox(height: 20),
 
-              // Resumen Financiero
+              // Resumen Financiero Actualizado
               pw.Container(
                 padding: const pw.EdgeInsets.all(12),
                 decoration: pw.BoxDecoration(
@@ -443,19 +449,24 @@ class PdfService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                   children: [
                     _buildSummaryItem(
-                      'Total Deuda',
-                      _currencyFormat.format(totalInitial),
-                      PdfColors.black,
-                    ),
-                    _buildSummaryItem(
-                      'Total Pagado',
-                      _currencyFormat.format(totalPaid),
+                      'Por Cobrar',
+                      _currencyFormat.format(totalCobrar),
                       PdfColors.green700,
                     ),
                     _buildSummaryItem(
-                      'Saldo Pendiente',
-                      _currencyFormat.format(totalPending),
+                      'Por Pagar',
+                      _currencyFormat.format(totalPagar),
                       PdfColors.red700,
+                    ),
+                    _buildSummaryItem(
+                      'Total Abonos',
+                      _currencyFormat.format(totalAbonos),
+                      PdfColors.blue700,
+                    ),
+                    _buildSummaryItem(
+                      'Saldo Neto',
+                      _currencyFormat.format(saldoNeto),
+                      saldoNeto >= 0 ? PdfColors.green900 : PdfColors.red900,
                     ),
                   ],
                 ),
