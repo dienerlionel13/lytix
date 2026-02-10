@@ -10,7 +10,8 @@ class Formatters {
     final symbol = currency == 'USD'
         ? AppConstants.currencySymbolUSD
         : AppConstants.currencySymbolGTQ;
-    final formatter = NumberFormat('#,##0.00', 'es_GT');
+    // Forzamos en_US para asegurar punto decimal y coma de miles
+    final formatter = NumberFormat('#,##0.00', 'en_US');
     return '$symbol ${formatter.format(amount)}';
   }
 
@@ -126,7 +127,8 @@ class Formatters {
 
   /// Format number with thousands separator
   static String number(num value, {int decimals = 0}) {
-    final formatter = NumberFormat.decimalPattern('es_GT');
+    // Forzamos en_US para asegurar punto decimal y coma de miles
+    final formatter = NumberFormat.decimalPattern('en_US');
     if (decimals > 0) {
       formatter.minimumFractionDigits = decimals;
       formatter.maximumFractionDigits = decimals;
@@ -136,7 +138,8 @@ class Formatters {
 
   /// Format compact number (K, M, B)
   static String compactNumber(num value) {
-    final formatter = NumberFormat.compact(locale: 'es_GT');
+    // Para compactNumber es_GT suele ser adecuado, pero si queremos consistencia en separadores:
+    final formatter = NumberFormat.compact(locale: 'en_US');
     return formatter.format(value);
   }
 }

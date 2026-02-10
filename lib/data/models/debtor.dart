@@ -201,10 +201,10 @@ class Receivable {
   }
 
   String get formattedInitialAmount =>
-      '$currencySymbol ${initialAmount.abs().toStringAsFixed(2)}';
+      '$currencySymbol ${initialAmount.toStringAsFixed(2)}';
 
   String get formattedPendingAmount =>
-      '$currencySymbol ${pendingAmount.abs().toStringAsFixed(2)}';
+      '$currencySymbol ${pendingAmount.toStringAsFixed(2)}';
 
   String get formattedPaidAmount =>
       '$currencySymbol ${paidAmount.toStringAsFixed(2)}';

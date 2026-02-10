@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/receivable_service.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../data/models/debtor.dart';
 import '../../widgets/common/glass_card.dart';
 import '../../widgets/common/gradient_button.dart';
@@ -51,7 +52,6 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: 'Q', decimalDigits: 2);
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
@@ -66,13 +66,13 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      _buildMainCard(currencyFormat),
+                      _buildMainCard(),
                       const SizedBox(height: 20),
-                      _buildFinancialDetails(currencyFormat),
+                      _buildFinancialDetails(),
                       const SizedBox(height: 20),
                       _buildInfoSection(dateFormat),
                       const SizedBox(height: 20),
-                      _buildPaymentsSection(currencyFormat, dateFormat),
+                      _buildPaymentsSection(dateFormat),
                       const SizedBox(height: 32),
                       _buildActions(context),
                       const SizedBox(height: 40),
@@ -112,7 +112,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
     ).animate().fadeIn(duration: 400.ms);
   }
 
-  Widget _buildMainCard(NumberFormat currencyFormat) {
+  Widget _buildMainCard() {
     return GlassCard(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -148,7 +148,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            currencyFormat.format(widget.receivable.pendingAmount.abs()),
+            Formatters.currency(widget.receivable.pendingAmount.abs()),
             style: TextStyle(
               color: widget.receivable.pendingAmount >= 0
                   ? AppColors.success
@@ -213,13 +213,13 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
     );
   }
 
-  Widget _buildFinancialDetails(NumberFormat currencyFormat) {
+  Widget _buildFinancialDetails() {
     return Row(
       children: [
         Expanded(
           child: _FinancialItem(
             label: 'Monto Total',
-            value: currencyFormat.format(widget.receivable.initialAmount.abs()),
+            value: Formatters.currency(widget.receivable.initialAmount.abs()),
             color: Colors.white,
           ),
         ),
@@ -227,7 +227,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
         Expanded(
           child: _FinancialItem(
             label: 'Pagado',
-            value: currencyFormat.format(widget.receivable.paidAmount),
+            value: Formatters.currency(widget.receivable.paidAmount),
             color: AppColors.success,
           ),
         ),
@@ -312,10 +312,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
     );
   }
 
-  Widget _buildPaymentsSection(
-    NumberFormat currencyFormat,
-    DateFormat dateFormat,
-  ) {
+  Widget _buildPaymentsSection(DateFormat dateFormat) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -386,7 +383,7 @@ class _ReceivableDetailScreenState extends State<ReceivableDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currencyFormat.format(payment.amount),
+                            Formatters.currency(payment.amount),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,

@@ -10,6 +10,7 @@ class PdfService {
   static final _currencyFormat = NumberFormat.currency(
     symbol: 'Q',
     decimalDigits: 2,
+    locale: 'en_US', // Forzamos punto decimal y coma de miles
   );
   static final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 

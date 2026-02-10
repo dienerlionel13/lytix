@@ -6,6 +6,7 @@ import '../../widgets/common/glass_card.dart';
 import '../../../core/services/receivable_service.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/pdf_service.dart';
+import '../../../core/utils/formatters.dart';
 
 class DebtorDetailScreen extends StatefulWidget {
   final Debtor debtor;
@@ -53,10 +54,29 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
     }
   }
 
-  double get _netBalance =>
-      _receivables.fold(0.0, (sum, r) => sum + r.pendingAmount);
-  double get _totalPaid =>
-      _receivables.fold(0.0, (sum, r) => sum + r.paidAmount);
+  // Calcula lo que me deben (Por cobrar) - Pendiente
+  double get _totalReceivable => _receivables
+      .where((r) => r.initialAmount > 0)
+      .fold(0.0, (sum, r) => sum + r.pendingAmount);
+
+  // Calcula lo que yo debo (Por pagar) - Pendiente
+  double get _totalPayable => _receivables
+      .where((r) => r.initialAmount < 0)
+      .fold(0.0, (sum, r) => sum + r.pendingAmount.abs());
+
+  // Balance General: (Suma de montos iniciales netos) - (Suma de abonos totales)
+  // Esto asegura que si tú pagas o te pagan, el balance disminuye (menos saldo pendiente).
+  double get _netBalance {
+    final double initialNet = _receivables.fold(
+      0.0,
+      (sum, r) => sum + r.initialAmount,
+    );
+    final double totalPayments = _receivables.fold(
+      0.0,
+      (sum, r) => sum + r.paidAmount,
+    );
+    return initialNet - totalPayments;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,26 +218,37 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
   }
 
   Widget _buildSummaryCards() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _SummaryCard(
-            title: _netBalance >= 0 ? 'Me deben (Neto)' : 'Yo debo (Neto)',
-            amount: 'Q ${_netBalance.abs().toStringAsFixed(2)}',
-            color: _netBalance >= 0 ? AppColors.success : AppColors.error,
-            icon: _netBalance >= 0
-                ? Icons.account_balance_wallet
-                : Icons.warning_amber_rounded,
-          ),
+        // Balance Card (Full Width)
+        _SummaryCard(
+          title: 'Balance General',
+          amount: Formatters.currency(_netBalance),
+          color: _netBalance >= 0 ? AppColors.success : AppColors.error,
+          icon: Icons.account_balance,
+          isFullWidth: true,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _SummaryCard(
-            title: 'Pagos Recibidos',
-            amount: 'Q ${_totalPaid.toStringAsFixed(2)}',
-            color: AppColors.primary,
-            icon: Icons.history,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryCard(
+                title: 'Por cobrar',
+                amount: Formatters.currency(_totalReceivable),
+                color: AppColors.success,
+                icon: Icons.call_received,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SummaryCard(
+                title: 'Por pagar',
+                amount: Formatters.currency(_totalPayable),
+                color: AppColors.error,
+                icon: Icons.call_made,
+              ),
+            ),
+          ],
         ),
       ],
     ).animate().fadeIn(duration: 400.ms, delay: 150.ms);
@@ -561,12 +592,14 @@ class _SummaryCard extends StatelessWidget {
   final String amount;
   final Color color;
   final IconData icon;
+  final bool isFullWidth;
 
   const _SummaryCard({
     required this.title,
     required this.amount,
     required this.color,
     required this.icon,
+    this.isFullWidth = false,
   });
 
   @override
@@ -579,14 +612,14 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: color, size: isFullWidth ? 24 : 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 13,
+                    fontSize: isFullWidth ? 15 : 13,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -599,7 +632,7 @@ class _SummaryCard extends StatelessWidget {
             amount,
             style: TextStyle(
               color: color,
-              fontSize: 20,
+              fontSize: isFullWidth ? 26 : 20,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -646,7 +679,7 @@ class _ReceivableCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  receivable.formattedPendingAmount,
+                  Formatters.currency(receivable.pendingAmount),
                   style: TextStyle(
                     color: receivable.pendingAmount >= 0
                         ? AppColors.success
@@ -676,14 +709,14 @@ class _ReceivableCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total: ${receivable.formattedInitialAmount}',
+                  'Total: ${Formatters.currency(receivable.initialAmount)}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 13,
                   ),
                 ),
                 Text(
-                  'Pagado: ${receivable.formattedPaidAmount}',
+                  'Pagado: ${Formatters.currency(receivable.paidAmount)}',
                   style: TextStyle(
                     color: AppColors.success.withValues(alpha: 0.8),
                     fontSize: 13,

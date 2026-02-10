@@ -6,7 +6,7 @@ import '../../widgets/common/glass_card.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/debtor_service.dart';
 import '../../../core/services/receivable_service.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/formatters.dart';
 import 'package:provider/provider.dart';
 
 class DebtorsListScreen extends StatefulWidget {
@@ -21,8 +21,6 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
   final List<Receivable> _allReceivables = [];
   bool _isLoading = true;
   String _searchQuery = '';
-
-  final _currencyFormat = NumberFormat.currency(symbol: 'Q', decimalDigits: 2);
 
   @override
   void initState() {
@@ -69,18 +67,29 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
 
   double get _globalPayable {
     // Solo sumamos los saldos negativos (lo que yo debo)
-    // El monto inicial es negativo en el modelo, pero pendingAmount también lo será.
-    // Devolvemos el valor absoluto para mostrarlo en positivo en la etiqueta "Le Debo"
     return _allReceivables
         .where((r) => r.initialAmount < 0)
         .fold(0.0, (sum, r) => sum + r.pendingAmount)
         .abs();
   }
 
+  double get _globalBalance {
+    final double initialNet = _allReceivables.fold(
+      0.0,
+      (sum, r) => sum + r.initialAmount,
+    );
+    final double totalPayments = _allReceivables.fold(
+      0.0,
+      (sum, r) => sum + r.paidAmount,
+    );
+    return initialNet - totalPayments;
+  }
+
   double _getDebtorBalance(String debtorId) {
-    return _allReceivables
-        .where((r) => r.debtorId == debtorId)
-        .fold(0.0, (sum, r) => sum + r.pendingAmount);
+    final debtorRecs = _allReceivables.where((r) => r.debtorId == debtorId);
+    final initialNet = debtorRecs.fold(0.0, (sum, r) => sum + r.initialAmount);
+    final totalPayments = debtorRecs.fold(0.0, (sum, r) => sum + r.paidAmount);
+    return initialNet - totalPayments;
   }
 
   int _getDebtorDebtCount(String debtorId) {
@@ -167,22 +176,33 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
   Widget _buildSummaryRow() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _buildSummaryCard(
-              label: 'Por Cobrar',
-              amount: _globalReceivable,
-              color: AppColors.success,
-            ),
+          _buildSummaryCard(
+            label: 'Balance Total',
+            amount: _globalBalance,
+            color: _globalBalance >= 0 ? AppColors.success : AppColors.error,
+            isFullWidth: true,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildSummaryCard(
-              label: 'Por Pagar',
-              amount: _globalPayable,
-              color: AppColors.error,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryCard(
+                  label: 'Por Cobrar',
+                  amount: _globalReceivable,
+                  color: AppColors.success,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSummaryCard(
+                  label: 'Por Pagar',
+                  amount: _globalPayable,
+                  color: AppColors.error,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -193,6 +213,7 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
     required String label,
     required double amount,
     required Color color,
+    bool isFullWidth = false,
   }) {
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -202,16 +223,19 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.white70, fontSize: 10),
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: isFullWidth ? 12 : 10,
+            ),
           ),
           const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              _currencyFormat.format(amount),
+              Formatters.currency(amount),
               style: TextStyle(
                 color: color,
-                fontSize: 14,
+                fontSize: isFullWidth ? 20 : 14,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
@@ -291,7 +315,6 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
                 debtor: debtor,
                 balance: balance,
                 debtCount: count,
-                currencyFormat: _currencyFormat,
                 onTap: () async {
                   await Navigator.pushNamed(
                     context,
@@ -315,14 +338,12 @@ class _DebtorCard extends StatelessWidget {
   final Debtor debtor;
   final double balance;
   final int debtCount;
-  final NumberFormat currencyFormat;
   final VoidCallback onTap;
 
   const _DebtorCard({
     required this.debtor,
     required this.balance,
     required this.debtCount,
-    required this.currencyFormat,
     required this.onTap,
   });
 
@@ -398,7 +419,7 @@ class _DebtorCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  currencyFormat.format(balance.abs()),
+                  Formatters.currency(balance.abs()),
                   style: TextStyle(
                     color: balance >= 0 ? AppColors.success : AppColors.error,
                     fontSize: 16,

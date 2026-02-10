@@ -48,29 +48,28 @@ class ReceivableService extends ChangeNotifier {
   /// Obtiene todas las deudas de un deudor específico
   Future<List<Receivable>> getReceivables(String debtorId) async {
     try {
+      // Optimizamos cargando las deudas y sus pagos en una sola consulta
       final List<dynamic> response = await _supabase
           .schema('lytix')
           .from('receivables')
-          .select()
+          .select('*, receivable_payments(amount)')
           .eq('debtor_id', debtorId)
           .order('created_at', ascending: false);
 
-      final receivables = response.map((m) => Receivable.fromMap(m)).toList();
+      final List<Receivable> receivables = [];
 
-      // Calcular montos pagados para cada deuda
-      for (var receivable in receivables) {
-        final paymentsResponse = await _supabase
-            .schema('lytix')
-            .from('receivable_payments')
-            .select('amount')
-            .eq('receivable_id', receivable.id);
-
+      for (var m in response) {
+        final receivable = Receivable.fromMap(m);
+        // Sumar todos los pagos para calcular el total pagado
+        final payments = m['receivable_payments'] as List<dynamic>? ?? [];
         double totalPaid = 0;
-        for (var p in paymentsResponse) {
+        for (var p in payments) {
           totalPaid += (p['amount'] as num).toDouble();
         }
         receivable.paidAmount = totalPaid;
+        receivables.add(receivable);
 
+        // Actualizamos caché local
         await _dbHelper.debtsDb.insert(
           DbConstants.tableReceivables,
           receivable.toMap(),
@@ -94,33 +93,29 @@ class ReceivableService extends ChangeNotifier {
   /// Obtiene todas las deudas de todos los deudores de un usuario
   Future<List<Receivable>> getAllUserReceivables(String userId) async {
     try {
-      // Usar join para filtrar por user_id a través de debtors
+      // Optimizamos cargando deudas y pagos en una sola consulta con join
       final List<dynamic> response = await _supabase
           .schema('lytix')
           .from('receivables')
-          .select('*, debtors!inner(user_id)')
+          .select('*, debtors!inner(user_id), receivable_payments(amount)')
           .eq('debtors.user_id', userId);
 
-      final receivables = response.map((m) => Receivable.fromMap(m)).toList();
+      final List<Receivable> receivables = [];
 
-      for (var receivable in receivables) {
-        final paymentsResponse = await _supabase
-            .schema('lytix')
-            .from('receivable_payments')
-            .select('amount')
-            .eq('receivable_id', receivable.id);
-
+      for (var m in response) {
+        final receivable = Receivable.fromMap(m);
+        final payments = m['receivable_payments'] as List<dynamic>? ?? [];
         double totalPaid = 0;
-        for (var p in paymentsResponse) {
+        for (var p in payments) {
           totalPaid += (p['amount'] as num).toDouble();
         }
         receivable.paidAmount = totalPaid;
+        receivables.add(receivable);
       }
 
       return receivables;
     } catch (e) {
       debugPrint('Error obteniendo todas las deudas, usando local: $e');
-      // En local es un poco más complejo el join manual o simplemente traer todo
       final List<Map<String, dynamic>> maps = await _dbHelper.debtsDb.rawQuery(
         '''
         SELECT r.* FROM receivables r
