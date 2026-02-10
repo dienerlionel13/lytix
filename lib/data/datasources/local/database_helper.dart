@@ -172,6 +172,18 @@ class DatabaseHelper {
             }
           }
         }
+
+        if (oldVersion < 6) {
+          if (path.contains(DbConstants.debtsDatabase)) {
+            try {
+              await db.execute(
+                'ALTER TABLE receivables ADD COLUMN paid_amount REAL DEFAULT 0',
+              );
+            } catch (e) {
+              debugPrint('Error en migración de deudas (v6): $e');
+            }
+          }
+        }
       },
     );
   }

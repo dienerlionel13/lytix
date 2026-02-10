@@ -165,14 +165,29 @@ class Receivable {
   /// Amount that has been paid - can be modified externally
   double paidAmount;
 
-  double get pendingAmount => initialAmount - paidAmount;
+  double get pendingAmount {
+    if (initialAmount >= 0) {
+      return initialAmount - paidAmount;
+    } else {
+      // Para deudas negativas (yo debo), el abono disminuye la magnitud de la deuda.
+      // Ejem: -100 + 10 = -90 de deuda.
+      return initialAmount + paidAmount;
+    }
+  }
 
   double get progressPercentage {
     if (initialAmount == 0) return 0.0;
-    return (paidAmount / initialAmount).clamp(0.0, 1.0);
+    return (paidAmount / initialAmount.abs()).clamp(0.0, 1.0);
   }
 
-  bool get isPaid => pendingAmount <= 0;
+  bool get isPaid {
+    if (initialAmount >= 0) {
+      return pendingAmount <= 0;
+    } else {
+      return pendingAmount >= 0;
+    }
+  }
+
   bool get isPartial => paidAmount > 0 && !isPaid;
 
   bool get isOverdue {
@@ -186,10 +201,10 @@ class Receivable {
   }
 
   String get formattedInitialAmount =>
-      '$currencySymbol ${initialAmount.toStringAsFixed(2)}';
+      '$currencySymbol ${initialAmount.abs().toStringAsFixed(2)}';
 
   String get formattedPendingAmount =>
-      '$currencySymbol ${pendingAmount.toStringAsFixed(2)}';
+      '$currencySymbol ${pendingAmount.abs().toStringAsFixed(2)}';
 
   String get formattedPaidAmount =>
       '$currencySymbol ${paidAmount.toStringAsFixed(2)}';
@@ -213,6 +228,7 @@ class Receivable {
       'debtor_name': debtorName,
       'balance_type': balanceType,
       'transaction_date': transactionDate?.toIso8601String(),
+      'paid_amount': paidAmount,
     };
   }
 
@@ -244,6 +260,7 @@ class Receivable {
       transactionDate: map['transaction_date'] != null
           ? DateTime.parse(map['transaction_date'] as String)
           : null,
+      paidAmount: (map['paid_amount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -294,7 +311,6 @@ class Receivable {
       'Receivable{id: $id, description: $description, pending: $formattedPendingAmount}';
 }
 
-/// Receivable Payment Model
 class ReceivablePayment {
   final String id;
   final String receivableId;
@@ -305,6 +321,7 @@ class ReceivablePayment {
   final String? paymentMethod;
   final String? notes;
   final String? receiptNumber;
+  final DateTime createdAt;
 
   ReceivablePayment({
     String? id,
@@ -316,7 +333,9 @@ class ReceivablePayment {
     this.paymentMethod,
     this.notes,
     this.receiptNumber,
-  }) : id = id ?? const Uuid().v4();
+    DateTime? createdAt,
+  }) : id = id ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
@@ -329,6 +348,7 @@ class ReceivablePayment {
       'payment_method': paymentMethod,
       'notes': notes,
       'receipt_number': receiptNumber,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
@@ -343,6 +363,9 @@ class ReceivablePayment {
       paymentMethod: map['payment_method'] as String?,
       notes: map['notes'] as String?,
       receiptNumber: map['receipt_number'] as String?,
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : null,
     );
   }
 }

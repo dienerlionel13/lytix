@@ -5,7 +5,7 @@ class DbConstants {
   DbConstants._();
 
   // Database Version
-  static const int databaseVersion = 5;
+  static const int databaseVersion = 6;
 
   // Individual Database Files
   static const String mainDatabase = 'lytix_main.db';

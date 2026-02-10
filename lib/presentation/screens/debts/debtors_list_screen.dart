@@ -41,18 +41,22 @@ class _DebtorsListScreenState extends State<DebtorsListScreen> {
         final debtors = await debtorService.getDebtors(userId);
         final receivables = await recService.getAllUserReceivables(userId);
 
-        setState(() {
-          _debtors.clear();
-          _debtors.addAll(debtors);
-          _debtors.sort((a, b) => a.name.compareTo(b.name));
-          _allReceivables.clear();
-          _allReceivables.addAll(receivables);
-        });
+        if (mounted) {
+          setState(() {
+            _debtors.clear();
+            _debtors.addAll(debtors);
+            _debtors.sort((a, b) => a.name.compareTo(b.name));
+            _allReceivables.clear();
+            _allReceivables.addAll(receivables);
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error cargando datos de deudores: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

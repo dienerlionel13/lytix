@@ -38,14 +38,18 @@ class _DebtorDetailScreenState extends State<DebtorDetailScreen> {
         widget.debtor.id,
       );
 
-      setState(() {
-        _receivables.clear();
-        _receivables.addAll(receivables);
-      });
+      if (mounted) {
+        setState(() {
+          _receivables.clear();
+          _receivables.addAll(receivables);
+        });
+      }
     } catch (e) {
       debugPrint('Error cargando deudas de deudor: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

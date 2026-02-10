@@ -54,6 +54,7 @@ class DebtsSchema {
       debtor_name TEXT,
       balance_type TEXT,
       transaction_date TEXT,
+      paid_amount REAL DEFAULT 0,
       FOREIGN KEY (debtor_id) REFERENCES debtors(id) ON DELETE CASCADE,
       FOREIGN KEY (category_id) REFERENCES receivable_categories(id) ON DELETE SET NULL
     )

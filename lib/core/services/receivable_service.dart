@@ -57,7 +57,20 @@ class ReceivableService extends ChangeNotifier {
 
       final receivables = response.map((m) => Receivable.fromMap(m)).toList();
 
+      // Calcular montos pagados para cada deuda
       for (var receivable in receivables) {
+        final paymentsResponse = await _supabase
+            .schema('lytix')
+            .from('receivable_payments')
+            .select('amount')
+            .eq('receivable_id', receivable.id);
+
+        double totalPaid = 0;
+        for (var p in paymentsResponse) {
+          totalPaid += (p['amount'] as num).toDouble();
+        }
+        receivable.paidAmount = totalPaid;
+
         await _dbHelper.debtsDb.insert(
           DbConstants.tableReceivables,
           receivable.toMap(),
@@ -88,7 +101,23 @@ class ReceivableService extends ChangeNotifier {
           .select('*, debtors!inner(user_id)')
           .eq('debtors.user_id', userId);
 
-      return response.map((m) => Receivable.fromMap(m)).toList();
+      final receivables = response.map((m) => Receivable.fromMap(m)).toList();
+
+      for (var receivable in receivables) {
+        final paymentsResponse = await _supabase
+            .schema('lytix')
+            .from('receivable_payments')
+            .select('amount')
+            .eq('receivable_id', receivable.id);
+
+        double totalPaid = 0;
+        for (var p in paymentsResponse) {
+          totalPaid += (p['amount'] as num).toDouble();
+        }
+        receivable.paidAmount = totalPaid;
+      }
+
+      return receivables;
     } catch (e) {
       debugPrint('Error obteniendo todas las deudas, usando local: $e');
       // En local es un poco más complejo el join manual o simplemente traer todo

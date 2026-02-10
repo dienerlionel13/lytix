@@ -300,6 +300,9 @@ class PdfService {
             notes: r.notes ?? '',
             amount: r.initialAmount, // Los cargos aumentan el saldo
             isPayment: false,
+            type: r.balanceType == 'PAYABLE' || r.balanceType == 'POR PAGAR'
+                ? 'Por Pagar'
+                : 'Por Cobrar',
           ),
         );
       }
@@ -315,6 +318,7 @@ class PdfService {
             notes: p.notes ?? '',
             amount: -p.amount, // Los abonos disminuyen el saldo
             isPayment: true,
+            type: 'Abono',
           ),
         );
       }
@@ -471,9 +475,11 @@ class PdfService {
                   width: 0.5,
                 ),
                 columnWidths: {
-                  0: const pw.FixedColumnWidth(70), // F. Trans
-                  1: const pw.FlexColumnWidth(3), // Descripción
-                  2: const pw.FixedColumnWidth(80), // Saldo
+                  0: const pw.FixedColumnWidth(60), // F. Reg
+                  1: const pw.FixedColumnWidth(60), // F. Oper
+                  2: const pw.FixedColumnWidth(70), // Tipo
+                  3: const pw.FlexColumnWidth(3), // Descripción
+                  4: const pw.FixedColumnWidth(80), // Saldo
                 },
                 children: [
                   pw.TableRow(
@@ -481,7 +487,9 @@ class PdfService {
                       color: PdfColors.grey100,
                     ),
                     children: [
-                      _buildCell('F. Trans.', isHeader: true),
+                      _buildCell('F. Reg.', isHeader: true),
+                      _buildCell('F. Oper.', isHeader: true),
+                      _buildCell('Tipo', isHeader: true),
                       _buildCell('Descripción', isHeader: true),
                       _buildCell(
                         'Saldo',
@@ -493,12 +501,24 @@ class PdfService {
                   ...receivables.map(
                     (r) => pw.TableRow(
                       children: [
+                        _buildCell(DateFormat('dd/MM/yy').format(r.createdAt)),
                         _buildCell(
                           r.transactionDate != null
                               ? DateFormat(
                                   'dd/MM/yy',
                                 ).format(r.transactionDate!)
-                              : (DateFormat('dd/MM/yy').format(r.createdAt)),
+                              : '-',
+                        ),
+                        _buildCell(
+                          r.balanceType == 'PAYABLE' ||
+                                  r.balanceType == 'POR PAGAR'
+                              ? 'Por Pagar'
+                              : 'Por Cobrar',
+                          color:
+                              r.balanceType == 'PAYABLE' ||
+                                  r.balanceType == 'POR PAGAR'
+                              ? PdfColors.orange700
+                              : PdfColors.blue700,
                         ),
                         _buildCell(r.description),
                         _buildCell(
@@ -532,10 +552,11 @@ class PdfService {
                 ),
                 columnWidths: {
                   0: const pw.FixedColumnWidth(60), // Fecha
-                  1: const pw.FlexColumnWidth(1.5), // Descripción
-                  2: const pw.FlexColumnWidth(2), // Notas
-                  3: const pw.FixedColumnWidth(70), // Monto
-                  4: const pw.FixedColumnWidth(70), // Saldo
+                  1: const pw.FixedColumnWidth(70), // Tipo
+                  2: const pw.FlexColumnWidth(1.5), // Descripción
+                  3: const pw.FlexColumnWidth(2), // Notas
+                  4: const pw.FixedColumnWidth(70), // Monto
+                  5: const pw.FixedColumnWidth(70), // Saldo
                 },
                 children: [
                   pw.TableRow(
@@ -544,6 +565,7 @@ class PdfService {
                     ),
                     children: [
                       _buildCell('Fecha', isHeader: true),
+                      _buildCell('Tipo', isHeader: true),
                       _buildCell('Descripción', isHeader: true),
                       _buildCell('Notas', isHeader: true),
                       _buildCell(
@@ -563,6 +585,14 @@ class PdfService {
                     return pw.TableRow(
                       children: [
                         _buildCell(DateFormat('dd/MM/yy').format(move.date)),
+                        _buildCell(
+                          move.type ?? '',
+                          color: move.type == 'Por Pagar'
+                              ? PdfColors.orange700
+                              : move.type == 'Abono'
+                              ? PdfColors.green700
+                              : PdfColors.blue700,
+                        ),
                         _buildCell(move.description),
                         _buildCell(move.notes, align: pw.TextAlign.left),
                         _buildCell(
@@ -730,6 +760,7 @@ class _StatementMovement {
   final String notes;
   final double amount;
   final bool isPayment;
+  final String? type;
 
   _StatementMovement({
     required this.date,
@@ -737,5 +768,6 @@ class _StatementMovement {
     required this.notes,
     required this.amount,
     required this.isPayment,
+    this.type,
   });
 }
