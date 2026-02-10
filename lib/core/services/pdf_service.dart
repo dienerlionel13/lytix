@@ -257,10 +257,13 @@ class PdfService {
         ),
       );
 
+      final timestamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
+      final safeName = debtor.name.replaceAll(' ', '_');
       final bytes = await pdf.save();
+
       await Printing.sharePdf(
         bytes: bytes,
-        filename: 'recibo_${payment.id.substring(0, 8)}.pdf',
+        filename: '${timestamp}_${safeName}_Recibo_Pago.pdf',
       );
     } catch (e) {
       debugPrint('Error fatal generando/compartiendo PDF: $e');
@@ -294,16 +297,15 @@ class PdfService {
       // Preparar movimientos cronológicos
       final movements = <_StatementMovement>[];
       for (var r in receivables) {
+        final isPayable = r.initialAmount < 0;
         movements.add(
           _StatementMovement(
             date: r.transactionDate ?? r.createdAt,
             description: r.description,
             notes: r.notes ?? '',
-            amount: r.initialAmount, // Los cargos aumentan el saldo
+            amount: r.initialAmount,
             isPayment: false,
-            type: r.balanceType == 'PAYABLE' || r.balanceType == 'POR PAGAR'
-                ? 'Por Pagar'
-                : 'Por Cobrar',
+            type: isPayable ? 'Por Pagar' : 'Por Cobrar',
           ),
         );
       }
@@ -451,12 +453,12 @@ class PdfService {
                     _buildSummaryItem(
                       'Por Cobrar',
                       _currencyFormat.format(totalCobrar),
-                      PdfColors.green700,
+                      PdfColors.red700,
                     ),
                     _buildSummaryItem(
                       'Por Pagar',
                       _currencyFormat.format(totalPagar),
-                      PdfColors.red700,
+                      PdfColors.green700,
                     ),
                     _buildSummaryItem(
                       'Total Abonos',
@@ -466,7 +468,7 @@ class PdfService {
                     _buildSummaryItem(
                       'Saldo Neto',
                       _currencyFormat.format(saldoNeto),
-                      saldoNeto >= 0 ? PdfColors.green900 : PdfColors.red900,
+                      saldoNeto > 0 ? PdfColors.red900 : PdfColors.green900,
                     ),
                   ],
                 ),
@@ -522,21 +524,16 @@ class PdfService {
                               : '-',
                         ),
                         _buildCell(
-                          r.balanceType == 'PAYABLE' ||
-                                  r.balanceType == 'POR PAGAR'
-                              ? 'Por Pagar'
-                              : 'Por Cobrar',
-                          color:
-                              r.balanceType == 'PAYABLE' ||
-                                  r.balanceType == 'POR PAGAR'
-                              ? PdfColors.orange700
-                              : PdfColors.blue700,
+                          r.initialAmount < 0 ? 'Por Pagar' : 'Por Cobrar',
+                          color: r.initialAmount < 0
+                              ? PdfColors.green700
+                              : PdfColors.red700,
                         ),
                         _buildCell(r.description),
                         _buildCell(
                           _currencyFormat.format(r.pendingAmount),
                           align: pw.TextAlign.right,
-                          color: r.isPaid
+                          color: r.initialAmount < 0
                               ? PdfColors.green700
                               : PdfColors.red700,
                         ),
@@ -600,18 +597,20 @@ class PdfService {
                         _buildCell(
                           move.type ?? '',
                           color: move.type == 'Por Pagar'
-                              ? PdfColors.orange700
-                              : move.type == 'Abono'
                               ? PdfColors.green700
-                              : PdfColors.blue700,
+                              : move.type == 'Abono'
+                              ? PdfColors.blue700
+                              : PdfColors.red700,
                         ),
                         _buildCell(move.description),
                         _buildCell(move.notes, align: pw.TextAlign.left),
                         _buildCell(
                           _currencyFormat.format(move.amount.abs()),
                           align: pw.TextAlign.right,
-                          color: move.isPayment
+                          color: move.type == 'Por Pagar'
                               ? PdfColors.green700
+                              : move.type == 'Abono'
+                              ? PdfColors.blue700
                               : PdfColors.red700,
                         ),
                         _buildCell(
@@ -698,10 +697,13 @@ class PdfService {
         ),
       );
 
+      final timestamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
+      final safeName = debtor.name.replaceAll(' ', '_');
       final bytes = await pdf.save();
+
       await Printing.sharePdf(
         bytes: bytes,
-        filename: 'Estado_Cuenta_${debtor.name.replaceAll(' ', '_')}.pdf',
+        filename: '${timestamp}_${safeName}_Estado_Cuenta.pdf',
       );
     } catch (e) {
       debugPrint('Error generando estado de cuenta: $e');
